@@ -1,4 +1,4 @@
-package io.github.fourlastor.perceptual
+package io.github.fourlastor.construo
 
 import de.undercouch.gradle.tasks.download.Download
 import de.undercouch.gradle.tasks.download.DownloadTaskPlugin
