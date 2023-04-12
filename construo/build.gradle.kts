@@ -35,7 +35,8 @@ gradlePlugin {
 }
 
 dependencies {
-    implementation("org.beryx:badass-runtime-plugin:1.13.0")
+    implementation(libs.beryxRuntime)
+    implementation(libs.download)
 }
 
 publishing {
