@@ -19,7 +19,7 @@ import java.io.File
 class ConstruoPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         val currentOs: OperatingSystem = OperatingSystem.current()
-        val pluginExtension = project.extensions.create("construo", ConstruoPluginExtension::class.java, project)
+        val pluginExtension = project.extensions.create("construo", ConstruoPluginExtension::class.java)
 
         // Options - move to an extension
         val name = pluginExtension.name.get()
