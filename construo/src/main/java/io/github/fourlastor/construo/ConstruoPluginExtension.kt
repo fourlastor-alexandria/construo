@@ -5,7 +5,7 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 
-class ConstructorPluginExtension(project: Project) {
+class ConstruoPluginExtension(project: Project) {
     val name: Property<String> = project.objects.property(String::class.java)
     val version: Property<String> = project.objects.property(String::class.java)
     val outputDir: DirectoryProperty = project.objects.directoryProperty()

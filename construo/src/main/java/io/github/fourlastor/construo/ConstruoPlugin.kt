@@ -19,16 +19,16 @@ import java.io.File
 class ConstruoPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         val currentOs: OperatingSystem = OperatingSystem.current()
-        val extension = project.extensions.create("construo", ConstructorPluginExtension::class.java, project)
+        val pluginExtension = project.extensions.create("construo", ConstruoPluginExtension::class.java, project)
 
         // Options - move to an extension
-        val name = extension.name.get()
-        val gameVersion = extension.version.get()
+        val name = pluginExtension.name.get()
+        val gameVersion = pluginExtension.version.get()
         val packageInputDir = "jpackage/in"
-        val packageOutputDir = extension.outputDir.get()
-        val linuxIcon = extension.linuxIcon
-        val winIcon = extension.winIcon
-        val macIcon = extension.macIcon
+        val packageOutputDir = pluginExtension.outputDir.get()
+        val linuxIcon = pluginExtension.linuxIcon
+        val winIcon = pluginExtension.winIcon
+        val macIcon = pluginExtension.macIcon
 
         val targetDir = File(project.buildDir, "construo")
         val linuxAppDir = "$targetDir/appimage"
@@ -121,12 +121,11 @@ class ConstruoPlugin : Plugin<Project> {
         val architectures = listOf("x64", "aarch64")
 
 
-        // TODO check folders - one of them should be the linux app image one
         val prepareAppImageFilesTasks = architectures.map { arch ->
             tasks.create("prepareAppImageFiles$arch", Copy::class.java) { task ->
                 task.group = GROUP_NAME
                 task.dependsOn(tasks.withType(RuntimeTask::class.java))
-                task.from(project.file("${targetDir}/desktop-linux-$arch")) {
+                task.from(project.file("$jpackageImageBuildDir/$name-linux-$arch")) {
                     it.into(APP_DIR_NAME)
                 }
                 task.from(project.file("${targetDir}/Game.AppDir.Template")) {
@@ -207,7 +206,7 @@ class ConstruoPlugin : Plugin<Project> {
         val buildMacAppTasks = architectures.map { arch ->
             tasks.create("buildMacAppBundle$arch", Copy::class.java) { task ->
                 task.group = GROUP_NAME
-                task.from(project.file("$jpackageImageBuildDir/desktop-mac-$arch")) {
+                task.from(project.file("$jpackageImageBuildDir/$name-mac-$arch")) {
                     it.into("MacOS")
                 }
                 task.from(project.file(macIcon)) {
@@ -254,7 +253,7 @@ class ConstruoPlugin : Plugin<Project> {
     }
 
     companion object {
-        private const val GROUP_NAME = "package"
+        const val GROUP_NAME = "package"
         private const val APP_DIR_NAME = "Game.AppDir"
         private const val APP_IMAGE_NAME = "Game"
 
