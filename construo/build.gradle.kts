@@ -41,38 +41,42 @@ dependencies {
 
 publishing {
     publications {
-        create<MavenPublication>("mavenJava") {
-            artifactId = "construo"
-            from(components["java"])
-            pom {
-                name.set("Construo")
-                description.set("A plugin to cross compile libGDX games")
-                url.set("https://www.github.com/fourlastor-alexandria/construo-gdx")
-                licenses {
-                    license {
-                        name.set("MIT License")
-                        url.set("https://www.github.com/fourlastor-alexandria/construo-gdx/blob/main/LICENSE")
-                    }
-                }
-                developers {
-                    developer {
-                        id.set("fourlastor")
-                        name.set("Daniele Conti")
-                    }
-                }
-                scm {
-                    connection.set("scm:git:https://www.github.com/fourlastor-alexandria/construo-gdx.git")
-                    developerConnection.set("scm:git:https://www.github.com/fourlastor-alexandria/construo-gdx.git")
-                    url.set("https://www.github.com/fourlastor-alexandria/construo-gdx")
-                }
-            }
-        }
+//        create<MavenPublication>("mavenJava") {
+//            artifactId = "construo"
+//            from(components["java"])
+//            pom {
+//                name.set("Construo")
+//                description.set("A plugin to cross compile libGDX games")
+//                url.set("https://www.github.com/fourlastor-alexandria/construo-gdx")
+//                licenses {
+//                    license {
+//                        name.set("MIT License")
+//                        url.set("https://www.github.com/fourlastor-alexandria/construo-gdx/blob/main/LICENSE")
+//                    }
+//                }
+//                developers {
+//                    developer {
+//                        id.set("fourlastor")
+//                        name.set("Daniele Conti")
+//                    }
+//                }
+//                scm {
+//                    connection.set("scm:git:https://www.github.com/fourlastor-alexandria/construo-gdx.git")
+//                    developerConnection.set("scm:git:https://www.github.com/fourlastor-alexandria/construo-gdx.git")
+//                    url.set("https://www.github.com/fourlastor-alexandria/construo-gdx")
+//                }
+//            }
+//        }
     }
 }
 
-signing {
-    val signingKey: String? by project
-    val signingPassword: String? by project
-    useInMemoryPgpKeys(signingKey, signingPassword)
-    sign(publishing.publications["mavenJava"])
-}
+//signing {
+//    val signingKey: String? by project
+//    val signingPassword: String? by project
+//    useInMemoryPgpKeys(signingKey, signingPassword)
+//    sign(publishing.publications["mavenJava"])
+//}
+
+//construo {
+//
+//}
