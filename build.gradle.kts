@@ -12,6 +12,11 @@ buildscript {
         mavenCentral()
         gradlePluginPortal()
     }
+    dependencies {
+        classpath("io.github.fourlastor.gdx:construo:1.0.0")
+    }
+
+
 }
 
 val libVersion: String by project
