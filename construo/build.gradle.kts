@@ -15,8 +15,8 @@ java.targetCompatibility = JavaVersion.VERSION_1_8
 
 spotless {
     isEnforceCheck = false
-    java {
-        palantirJavaFormat()
+    kotlin {
+        ktlint()
     }
 }
 

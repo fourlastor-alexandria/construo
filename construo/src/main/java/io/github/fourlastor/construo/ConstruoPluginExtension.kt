@@ -26,18 +26,13 @@ abstract class ConstruoPluginExtension @Inject constructor(
     }
 }
 
-interface Target: Named {
+interface Target : Named {
 
     val architecture: Property<Architecture>
     interface Linux : Target
     interface MacOs : Target
     interface Windows : Target
 }
-//
-//abstract class Target(val name: String) {
-//    abstract class Linux64(name: String): Target(name)
-//    abstract class Mac64(name: String): Target(name)
-//}
 
 enum class Architecture(val arch: String) {
     X64("x64"),

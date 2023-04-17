@@ -1,6 +1,5 @@
 package io.github.fourlastor.construo.task.macos
 
-import io.github.fourlastor.construo.Architecture
 import io.github.fourlastor.construo.task.BaseTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileSystemOperations
@@ -15,14 +14,18 @@ import org.gradle.api.tasks.TaskAction
 import javax.inject.Inject
 
 abstract class BuildMacAppBundle @Inject constructor(
-    private val fileSystemOperations: FileSystemOperations,
-): BaseTask() {
+    private val fileSystemOperations: FileSystemOperations
+) : BaseTask() {
 
     @get:Input abstract val targetName: Property<String>
+
     @get:InputDirectory abstract val jpackageImageBuildDir: DirectoryProperty
-    @get:InputFile @get:Optional abstract val icon: RegularFileProperty
+
+    @get:InputFile @get:Optional
+    abstract val icon: RegularFileProperty
 
     @get:OutputDirectory abstract val outputDirectory: DirectoryProperty
+
     @TaskAction
     fun run() {
         fileSystemOperations.copy {
@@ -35,9 +38,10 @@ abstract class BuildMacAppBundle @Inject constructor(
                 }
             }
             // TODO plist
-            it.into(outputDirectory.get()
-                .dir("${targetName.get()}.app")
-                .dir("Contents")
+            it.into(
+                outputDirectory.get()
+                    .dir("${targetName.get()}.app")
+                    .dir("Contents")
             )
         }
     }

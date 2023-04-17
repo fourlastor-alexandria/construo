@@ -15,7 +15,6 @@ import org.gradle.api.tasks.bundling.Zip
 import org.gradle.configurationcache.extensions.capitalized
 import org.gradle.internal.os.OperatingSystem
 
-
 class ConstruoPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         val currentOs: OperatingSystem = OperatingSystem.current()
@@ -39,7 +38,7 @@ class ConstruoPlugin : Plugin<Project> {
                     listOf(
                         "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage",
                         "https://github.com/AppImage/AppImageKit/releases/download/continuous/runtime-x86_64",
-                        "https://github.com/AppImage/AppImageKit/releases/download/continuous/runtime-aarch64",
+                        "https://github.com/AppImage/AppImageKit/releases/download/continuous/runtime-aarch64"
                     )
                 )
                 it.dest(imageToolsDir)
@@ -165,7 +164,8 @@ class ConstruoPlugin : Plugin<Project> {
             extension.options.value(
                 listOf(
                     "--strip-debug",
-                    "--compress", "2",
+                    "--compress",
+                    "2",
                     "--no-header-files",
                     "--no-man-pages"
                 )
@@ -179,7 +179,7 @@ class ConstruoPlugin : Plugin<Project> {
                     "java.desktop",
                     "java.logging",
                     "jdk.incubator.foreign",
-                    "jdk.unsupported",
+                    "jdk.unsupported"
                 )
             )
             extension.launcher {

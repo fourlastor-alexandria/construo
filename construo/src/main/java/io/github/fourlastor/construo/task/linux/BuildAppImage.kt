@@ -14,15 +14,18 @@ import javax.inject.Inject
 
 abstract class BuildAppImage @Inject constructor(
     private val execOperations: ExecOperations
-): BaseTask() {
+) : BaseTask() {
 
     @get:InputDirectory
     abstract val imagesToolsDir: DirectoryProperty
+
     @get:InputDirectory
     abstract val inputDir: DirectoryProperty
+
     @get:OutputDirectory
     abstract val outputDir: DirectoryProperty
     abstract val targetName: Property<String>
+
     @get:Input
     abstract val architecture: Property<Architecture>
 
@@ -36,9 +39,12 @@ abstract class BuildAppImage @Inject constructor(
             val appImageTemplateDirPath = inputDir.get().dir(targetName.get()).dir(ConstruoPlugin.APP_DIR_NAME).asFile.absolutePath
             val targetPath = outputDir.get().file("${ConstruoPlugin.APP_IMAGE_NAME}-${targetName.get()}").asFile.absolutePath
             it.commandLine(
-                "./appimagetool-x86_64.AppImage", "-n", appImageTemplateDirPath,
+                "./appimagetool-x86_64.AppImage",
+                "-n",
+                appImageTemplateDirPath,
                 targetPath,
-                "--runtime-file", "./${runtimeName(architecture)}"
+                "--runtime-file",
+                "./${runtimeName(architecture)}"
             )
         }
     }

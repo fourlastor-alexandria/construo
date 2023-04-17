@@ -9,7 +9,7 @@ import javax.inject.Inject
 
 abstract class PrepareAppImageTools @Inject constructor(
     private val execOperations: ExecOperations
-): BaseTask() {
+) : BaseTask() {
 
     @get:InputDirectory
     abstract val imagesToolsDir: DirectoryProperty
