@@ -22,6 +22,7 @@ abstract class BuildAppImage @Inject constructor(
     abstract val inputDir: DirectoryProperty
     @get:OutputDirectory
     abstract val outputDir: DirectoryProperty
+    abstract val targetName: Property<String>
     @get:Input
     abstract val architecture: Property<Architecture>
 
@@ -32,8 +33,8 @@ abstract class BuildAppImage @Inject constructor(
             val architecture = architecture.get()
             val arch = architecture.arch
             it.environment(mapOf("ARCH" to arch))
-            val appImageTemplateDirPath = inputDir.get().dir("arch").dir(ConstruoPlugin.APP_DIR_NAME).asFile.absolutePath
-            val targetPath = outputDir.get().file("${ConstruoPlugin.APP_IMAGE_NAME}-$arch").asFile.absolutePath
+            val appImageTemplateDirPath = inputDir.get().dir(targetName.get()).dir(ConstruoPlugin.APP_DIR_NAME).asFile.absolutePath
+            val targetPath = outputDir.get().file("${ConstruoPlugin.APP_IMAGE_NAME}-${targetName.get()}").asFile.absolutePath
             it.commandLine(
                 "./appimagetool-x86_64.AppImage", "-n", appImageTemplateDirPath,
                 targetPath,

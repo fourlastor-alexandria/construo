@@ -1,4 +1,4 @@
-package io.github.fourlastor.construo.macos
+package io.github.fourlastor.construo.task.macos
 
 import io.github.fourlastor.construo.Architecture
 import io.github.fourlastor.construo.task.BaseTask
@@ -19,7 +19,6 @@ abstract class BuildMacAppBundle @Inject constructor(
 ): BaseTask() {
 
     @get:Input abstract val targetName: Property<String>
-    @get:Input abstract val architecture: Property<Architecture>
     @get:InputDirectory abstract val jpackageImageBuildDir: DirectoryProperty
     @get:InputFile @get:Optional abstract val icon: RegularFileProperty
 
@@ -35,6 +34,7 @@ abstract class BuildMacAppBundle @Inject constructor(
                     it.into("Resources")
                 }
             }
+            // TODO plist
             it.into(outputDirectory.get()
                 .dir("${targetName.get()}.app")
                 .dir("Contents")

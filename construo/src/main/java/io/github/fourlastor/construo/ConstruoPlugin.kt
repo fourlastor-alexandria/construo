@@ -5,13 +5,12 @@ import de.undercouch.gradle.tasks.download.DownloadTaskPlugin
 import io.github.fourlastor.construo.task.linux.BuildAppImage
 import io.github.fourlastor.construo.task.linux.PrepareAppImageFiles
 import io.github.fourlastor.construo.task.linux.PrepareAppImageTools
-import org.beryx.runtime.JPackageImageTask
+import io.github.fourlastor.construo.task.macos.BuildMacAppBundle
 import org.beryx.runtime.RuntimePlugin
 import org.beryx.runtime.data.RuntimePluginExtension
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.bundling.Zip
 import org.gradle.configurationcache.extensions.capitalized
 import org.gradle.internal.os.OperatingSystem
@@ -23,7 +22,6 @@ class ConstruoPlugin : Plugin<Project> {
         project.plugins.apply(RuntimePlugin::class.java)
         project.plugins.apply(DownloadTaskPlugin::class.java)
         val pluginExtension = project.extensions.create("construo", ConstruoPluginExtension::class.java)
-        val architectures = listOf("x64", "aarch64")
         val tasks = project.tasks
         val targetDir = project.layout.buildDirectory.dir("construo")
         val jpackageBuildDir = targetDir.map { it.dir("jpackage") }
@@ -33,7 +31,7 @@ class ConstruoPlugin : Plugin<Project> {
         val imageToolsDir = targetDir.map { it.dir("appimagetools") }
         val templateAppDir = targetDir.map { it.dir("Game.AppDir.Template") }
 
-
+        // Generic tasks, these are lazy because they need to be instantiated only if a specific platform is used.
         val downloadAppImageTools by lazy {
             tasks.register("downloadAppImageTools", Download::class.java) {
                 it.group = GROUP_NAME
@@ -48,7 +46,6 @@ class ConstruoPlugin : Plugin<Project> {
                 it.overwrite(false)
             }
         }
-
         val prepareAppImageTools by lazy {
             val downloadTask = downloadAppImageTools.get()
             tasks.register("prepareAppImageTools", PrepareAppImageTools::class.java) {
@@ -56,39 +53,48 @@ class ConstruoPlugin : Plugin<Project> {
                 it.dependsOn(downloadTask)
             }
         }
-
         val buildAppImages by lazy {
             tasks.register("buildAppImages") { task ->
                 task.group = GROUP_NAME
             }
         }
-
         val packageLinuxMain by lazy {
             tasks.register("packageLinux") { task ->
                 task.group = GROUP_NAME
             }
         }
-
-        pluginExtension.targets.all { target ->
-            tasks.register("debugTarget${target.name.capitalized()}") {
+        val buildMacAppBundles by lazy {
+            tasks.register("buildMacAppBundle") {
                 it.group = GROUP_NAME
-                it.doLast {
-                    println("Target ${target.name}: ${target}")
+            }
+        }
+        val packageMacMain by lazy {
+            tasks.register("packageMac") {
+                it.group = GROUP_NAME
+            }
+        }
+
+        // Register the correct tasks for each target
+        pluginExtension.targets.all { target ->
+            val capitalized = target.name.capitalized()
+            val archiveFileName = pluginExtension.name.map { "$it-${target.name}.zip" }
+            val packageDestination = pluginExtension.name.flatMap { name ->
+                pluginExtension.version.flatMap { version ->
+                    pluginExtension.outputDir.map { it.dir("$name-$version-${target.name}") }
                 }
             }
             when (target) {
                 is Target.Linux -> {
-                    val capitalized = target.name.capitalized()
                     val prepareAppImageFiles = tasks.register(
                         "prepareAppImageFiles$capitalized",
                         PrepareAppImageFiles::class.java
                     ) { task ->
                         task.dependsOn(tasks.named(RuntimePlugin.getTASK_NAME_RUNTIME()))
                         task.targetName.set(pluginExtension.name)
-                        task.architecture.set(target.architecture)
                         task.templateAppDir.set(templateAppDir)
                         task.jpackageImageBuildDir.set(jpackageImageBuildDir)
                         task.outputDir.set(linuxAppDir)
+//                        task.icon.set()
                     }
 
                     val prepareAppImageToolsTask = prepareAppImageTools.get()
@@ -105,11 +111,6 @@ class ConstruoPlugin : Plugin<Project> {
 
                     val packageLinux = tasks.register("package$capitalized", Zip::class.java) { task ->
                         task.group = GROUP_NAME
-                        val archiveFileName = pluginExtension.name.flatMap { name ->
-                            target.architecture.map { architecture ->
-                                "$name-${target.name}-${architecture.arch}"
-                            }
-                        }
                         task.archiveFileName.set(archiveFileName)
                         task.destinationDirectory.set(pluginExtension.outputDir)
                         task.dependsOn(buildAppImage)
@@ -119,15 +120,43 @@ class ConstruoPlugin : Plugin<Project> {
                             }
                         }
                         task.from(fromDir)
-                        val folderDir = pluginExtension.name.flatMap { name ->
-                            pluginExtension.version.map { version ->
-                                "${name}-v${version}-${target.name}"
-                            }
-                        }
-                        task.into(folderDir)
+                        task.into(packageDestination)
                     }
 
                     packageLinuxMain.get().dependsOn(packageLinux)
+                }
+                is Target.MacOs -> {
+                    val buildMacAppBundle =
+                        tasks.register("buildMacAppBundle$capitalized", BuildMacAppBundle::class.java) { task ->
+                            task.dependsOn(tasks.named(RuntimePlugin.getTASK_NAME_RUNTIME()))
+                            task.targetName.set(target.name)
+                            task.jpackageImageBuildDir.set(jpackageBuildDir)
+                            task.outputDirectory.set(macAppDir)
+//                        task.icon.set()
+                        }
+
+                    buildMacAppBundles.get().dependsOn(buildMacAppBundle)
+
+                    val packageMac = tasks.register("package$capitalized", Zip::class.java) { task ->
+                        task.group = GROUP_NAME
+                        task.archiveFileName.set(archiveFileName)
+                        task.destinationDirectory.set(pluginExtension.outputDir)
+                        task.dependsOn(buildMacAppBundle)
+                        task.from(macAppDir.map { it.dir(target.name) })
+                        task.into(packageDestination)
+                    }
+
+                    packageMacMain.get().dependsOn(packageMac)
+                }
+                is Target.Windows -> {
+                    tasks.register("packageWindows", Zip::class.java) { task ->
+                        task.group = GROUP_NAME
+                        task.archiveFileName.set(archiveFileName)
+                        task.destinationDirectory.set(pluginExtension.outputDir)
+                        task.dependsOn(tasks.named(RuntimePlugin.getTASK_NAME_JPACKAGE_IMAGE()))
+                        task.from(jpackageBuildDir)
+                        task.into(packageDestination)
+                    }
                 }
             }
         }
@@ -207,75 +236,11 @@ class ConstruoPlugin : Plugin<Project> {
 //                }
             }
         }
-
-        return
-
-        val buildMacAppTasks = architectures.map { arch ->
-            tasks.register("buildMacAppBundle$arch", Copy::class.java) { task ->
-                task.group = GROUP_NAME
-                task.from(project.file("$jpackageImageBuildDir/${pluginExtension.name.get()}-mac-$arch")) {
-                    it.into("MacOS")
-                }
-                // todo check if present
-                task.from(project.file(pluginExtension.macIcon.get())) {
-                    it.into("Resources")
-                }
-                // TODO add plist file
-                // task.from(project.file("plistFile.xml"))
-                task.into(project.file("$macAppDir/$arch/${pluginExtension.name.get()}.app/Contents"))
-            }
-        }
-
-        val buildMacAppBundle = tasks.register("buildMacAppBundle") { task ->
-            task.group = GROUP_NAME
-            buildMacAppTasks.forEach {
-                task.dependsOn(it)
-            }
-        }
-
-        val packageMacTasks = architectures.map { arch ->
-            tasks.register("packageMac$arch", Zip::class.java) { task ->
-                task.group = GROUP_NAME
-                task.archiveFileName.set("${pluginExtension.name.get()}-mac-$arch.zip")
-                task.destinationDirectory.set(project.file(pluginExtension.outputDir.get()))
-                task.dependsOn(buildMacAppBundle)
-                task.from(project.file("$macAppDir/$arch"))
-                task.into("${pluginExtension.name.get()}-v${pluginExtension.version.get()}-mac-$arch")
-            }
-        }
-
-        tasks.register("packageMac") { task ->
-            task.group = GROUP_NAME
-            packageMacTasks.forEach {
-                task.dependsOn(it)
-            }
-        }
-
-        tasks.register("packageWindows", Zip::class.java) { task ->
-            task.group = GROUP_NAME
-            task.archiveFileName.set("${pluginExtension.name.get()}-windows-x64.zip")
-            task.destinationDirectory.set(project.file(pluginExtension.outputDir.get()))
-            task.dependsOn(tasks.withType(JPackageImageTask::class.java))
-            task.from(project.file(jpackageBuildDir))
-            task.into("${pluginExtension.name.get()}-v${pluginExtension.version.get()}-windows-x64")
-        }
     }
 
     companion object {
         const val GROUP_NAME = "construo"
         const val APP_DIR_NAME = "Game.AppDir"
         const val APP_IMAGE_NAME = "Game"
-
-        private fun runtimeName(arch: String): String = when (arch) {
-            "aarch64" -> "runtime-aarch64"
-            "x64" -> "runtime-x86_64"
-            else -> error("Runtime for architecture $arch unknown")
-        }
-
-        private fun appImageArch(arch: String) = when (arch) {
-            "aarch64" -> "arm_aarch64"
-            "x64" -> "x86_64"
-            else -> error("AppImage arch for architecture $arch unknown")
-        }
     }
 }

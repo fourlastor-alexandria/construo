@@ -19,7 +19,6 @@ abstract class PrepareAppImageFiles @Inject constructor(
 ): BaseTask() {
 
     @get:Input abstract val targetName: Property<String>
-    @get:Input abstract val architecture: Property<Architecture>
     @get:InputDirectory abstract val jpackageImageBuildDir: DirectoryProperty
     @get:InputDirectory abstract val templateAppDir: DirectoryProperty
     @get:InputFile abstract val icon: RegularFileProperty
@@ -28,11 +27,10 @@ abstract class PrepareAppImageFiles @Inject constructor(
     @TaskAction
     fun run() {
         fileSystemOperations.copy {
-            it.from(jpackageImageBuildDir.get().dir("${targetName.get()}-linux-${architecture.get().arch}")) {
+            it.from(jpackageImageBuildDir.get().dir(targetName.get())) {
                 it.into(ConstruoPlugin.APP_DIR_NAME)
             }
-            // TODO remove /Game.AppDir.Template from this
-            it.from(templateAppDir.get().dir("Game.AppDir.Template")) {
+            it.from(templateAppDir.get()) {
                 it.into(ConstruoPlugin.APP_DIR_NAME)
             }
             if (icon.isPresent) {
@@ -40,7 +38,7 @@ abstract class PrepareAppImageFiles @Inject constructor(
                     it.into(ConstruoPlugin.APP_DIR_NAME)
                 }
             }
-            it.into(outputDir.dir(architecture.get().arch))
+            it.into(outputDir.dir(targetName.get()))
         }
     }
 }
