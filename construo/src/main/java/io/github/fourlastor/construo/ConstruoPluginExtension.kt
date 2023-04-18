@@ -13,7 +13,6 @@ abstract class ConstruoPluginExtension @Inject constructor(
 ) {
     abstract val name: Property<String>
     abstract val version: Property<String>
-    abstract val plistFile: RegularFileProperty
     abstract val outputDir: DirectoryProperty
     abstract val winIcon: RegularFileProperty
     abstract val linuxIcon: RegularFileProperty
