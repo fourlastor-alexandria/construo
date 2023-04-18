@@ -3,6 +3,8 @@ package io.github.fourlastor.construo
 import de.undercouch.gradle.tasks.download.Download
 import de.undercouch.gradle.tasks.download.DownloadTaskPlugin
 import io.github.fourlastor.construo.task.linux.BuildAppImage
+import io.github.fourlastor.construo.task.linux.GenerateAppRun
+import io.github.fourlastor.construo.task.linux.GenerateDesktopEntry
 import io.github.fourlastor.construo.task.linux.PrepareAppImageFiles
 import io.github.fourlastor.construo.task.linux.PrepareAppImageTools
 import io.github.fourlastor.construo.task.macos.BuildMacAppBundle
@@ -84,16 +86,34 @@ class ConstruoPlugin : Plugin<Project> {
             }
             when (target) {
                 is Target.Linux -> {
+                    val generateAppRun = tasks.register("generateAppRun$capitalized", GenerateAppRun::class.java) { task ->
+                        task.executable.set(pluginExtension.name)
+                        task.outputFile.set(templateAppDir.map { it.file("AppRun") })
+                    }
+
+                    val generateDesktopEntry = tasks.create("generateDesktopEntry$capitalized", GenerateDesktopEntry::class.java) { task ->
+                        task.icon.set(pluginExtension.linuxIcon)
+                        task.name.set(pluginExtension.humanName)
+                        task.executable.set(pluginExtension.name)
+                        task.version.set(pluginExtension.version)
+                        task.architecture.set(target.architecture)
+                        task.outputFile.set(templateAppDir.map { it.file("game.desktop") })
+                    }
+
                     val prepareAppImageFiles = tasks.register(
                         "prepareAppImageFiles$capitalized",
                         PrepareAppImageFiles::class.java
                     ) { task ->
-                        task.dependsOn(tasks.named(RuntimePlugin.getTASK_NAME_RUNTIME()))
+                        task.dependsOn(
+                            tasks.named(RuntimePlugin.getTASK_NAME_RUNTIME()),
+                            generateAppRun,
+                            generateDesktopEntry
+                        )
                         task.targetName.set(pluginExtension.name)
                         task.templateAppDir.set(templateAppDir)
                         task.jpackageImageBuildDir.set(jpackageImageBuildDir)
                         task.outputDir.set(linuxAppDir)
-//                        task.icon.set()
+                        task.icon.set(pluginExtension.linuxIcon)
                     }
 
                     val prepareAppImageToolsTask = prepareAppImageTools.get()
@@ -131,7 +151,7 @@ class ConstruoPlugin : Plugin<Project> {
                             task.targetName.set(target.name)
                             task.jpackageImageBuildDir.set(jpackageBuildDir)
                             task.outputDirectory.set(macAppDir)
-//                        task.icon.set()
+                            task.icon.set(pluginExtension.macIcon)
                         }
 
                     buildMacAppBundles.get().dependsOn(buildMacAppBundle)
