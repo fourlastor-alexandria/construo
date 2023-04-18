@@ -25,13 +25,10 @@ class ConstruoPlugin : Plugin<Project> {
         project.plugins.apply(DownloadTaskPlugin::class.java)
         val pluginExtension = project.extensions.create("construo", ConstruoPluginExtension::class.java)
         val tasks = project.tasks
-        val targetDir = project.layout.buildDirectory.dir("construo")
-        val jpackageBuildDir = targetDir.map { it.dir("jpackage") }
-        val jpackageImageBuildDir = jpackageBuildDir.map { it.dir("image") }
-        val linuxAppDir = targetDir.map { it.dir("linux") }
-        val macAppDir = targetDir.map { it.dir("mac") }
-        val imageToolsDir = targetDir.map { it.dir("appimagetools") }
-        val templateAppDir = targetDir.map { it.dir("Game.AppDir.Template") }
+        val baseBuildDir = project.layout.buildDirectory.dir("construo")
+        val jpackageBuildDir = baseBuildDir.map { it.dir("jpackage") }
+        val baseJpackageImageBuildDir = jpackageBuildDir.map { it.dir("image") }
+        val imageToolsDir = baseBuildDir.map { it.dir("appimagetools") }
 
         // Generic tasks, these are lazy because they need to be instantiated only if a specific platform is used.
         val downloadAppImageTools by lazy {
@@ -78,6 +75,9 @@ class ConstruoPlugin : Plugin<Project> {
 
         // Register the correct tasks for each target
         pluginExtension.targets.all { target ->
+            val targetBuildDir = baseBuildDir.map { it.dir(target.name) }
+            val jpackageImageBuildDir = baseJpackageImageBuildDir.map { it.dir(target.name) }
+
             val capitalized = target.name.capitalized()
             val archiveFileName = pluginExtension.name.map { "$it-${target.name}.zip" }
             val packageDestination = pluginExtension.name.flatMap { name ->
@@ -85,8 +85,16 @@ class ConstruoPlugin : Plugin<Project> {
                     pluginExtension.outputDir.map { it.dir("$name-$version-${target.name}") }
                 }
             }
+
             when (target) {
                 is Target.Linux -> {
+                    val linuxAppDir = targetBuildDir.map { it.dir(APP_DIR_NAME) }
+                    val templateAppDir = targetBuildDir.map { it.dir("Game.AppDir.Template") }
+                    val linuxAppImage = targetBuildDir.flatMap { dir ->
+                        target.architecture.map { architecture ->
+                            dir.file("$APP_IMAGE_NAME-${architecture.arch}")
+                        }
+                    }
                     val generateAppRun =
                         tasks.register("generateAppRun$capitalized", GenerateAppRun::class.java) { task ->
                             task.executable.set(pluginExtension.name)
@@ -112,7 +120,6 @@ class ConstruoPlugin : Plugin<Project> {
                             generateAppRun,
                             generateDesktopEntry
                         )
-                        task.targetName.set(pluginExtension.name)
                         task.templateAppDir.set(templateAppDir)
                         task.jpackageImageBuildDir.set(jpackageImageBuildDir)
                         task.outputDir.set(linuxAppDir)
@@ -121,11 +128,13 @@ class ConstruoPlugin : Plugin<Project> {
 
                     val prepareAppImageToolsTask = prepareAppImageTools.get()
                     val buildAppImage = tasks.register("buildAppImage$capitalized", BuildAppImage::class.java) {
-                        it.dependsOn(prepareAppImageToolsTask)
-                        it.dependsOn(prepareAppImageFiles)
+                        it.dependsOn(
+                            prepareAppImageToolsTask,
+                            prepareAppImageFiles
+                        )
                         it.imagesToolsDir.set(imageToolsDir)
-                        it.inputDir.set(linuxAppDir)
-                        it.outputDir.set(linuxAppDir)
+                        it.imageDir.set(linuxAppDir)
+                        it.appImageFile.set(linuxAppImage)
                         it.architecture.set(target.architecture)
                     }
 
@@ -133,22 +142,21 @@ class ConstruoPlugin : Plugin<Project> {
 
                     val packageLinux = tasks.register("package$capitalized", Zip::class.java) { task ->
                         task.group = GROUP_NAME
+                        task.dependsOn(buildAppImage)
                         task.archiveFileName.set(archiveFileName)
                         task.destinationDirectory.set(pluginExtension.outputDir)
-                        task.dependsOn(buildAppImage)
-                        val fromDir = linuxAppDir.flatMap { dir ->
-                            target.architecture.map { architecture ->
-                                dir.dir("$APP_IMAGE_NAME-${architecture.arch}")
-                            }
-                        }
-                        task.from(fromDir)
+                        task.from(linuxAppImage)
                         task.into(packageDestination)
                     }
 
                     packageLinuxMain.get().dependsOn(packageLinux)
                 }
+
                 is Target.MacOs -> {
-                    val pListFile = targetDir.map { it.dir("mac").file("Info.plist") }
+                    val macAppDir = targetBuildDir.flatMap { dir ->
+                        pluginExtension.name.map { dir.dir("$it.app") }
+                    }
+                    val pListFile = targetBuildDir.map { it.file("Info.plist") }
                     val generatePlist = tasks.register("generatePList$capitalized", GeneratePlist::class.java) { task ->
                         task.humanName.set(pluginExtension.humanName)
                         task.info.set(pluginExtension.info)
@@ -162,10 +170,9 @@ class ConstruoPlugin : Plugin<Project> {
                         tasks.register("buildMacAppBundle$capitalized", BuildMacAppBundle::class.java) { task ->
                             task.dependsOn(
                                 tasks.named(RuntimePlugin.getTASK_NAME_RUNTIME()),
-                                generatePlist,
+                                generatePlist
                             )
-                            task.targetName.set(target.name)
-                            task.jpackageImageBuildDir.set(jpackageBuildDir)
+                            task.jpackageImageBuildDir.set(jpackageImageBuildDir)
                             task.outputDirectory.set(macAppDir)
                             task.icon.set(pluginExtension.macIcon)
                             task.plist.set(pListFile)
@@ -178,12 +185,13 @@ class ConstruoPlugin : Plugin<Project> {
                         task.archiveFileName.set(archiveFileName)
                         task.destinationDirectory.set(pluginExtension.outputDir)
                         task.dependsOn(buildMacAppBundle)
-                        task.from(macAppDir.map { it.dir(target.name) })
+                        task.from(macAppDir)
                         task.into(packageDestination)
                     }
 
                     packageMacMain.get().dependsOn(packageMac)
                 }
+
                 is Target.Windows -> {
                     tasks.register("packageWindows", Zip::class.java) { task ->
                         task.group = GROUP_NAME
@@ -256,7 +264,7 @@ class ConstruoPlugin : Plugin<Project> {
                 }
             }
 
-            extension.imageDir.set(jpackageImageBuildDir)
+            extension.imageDir.set(baseJpackageImageBuildDir)
             extension.jpackageData.set(
                 jpackageBuildDir.flatMap { jpackageBuildDir ->
                     pluginExtension.name.flatMap { name ->

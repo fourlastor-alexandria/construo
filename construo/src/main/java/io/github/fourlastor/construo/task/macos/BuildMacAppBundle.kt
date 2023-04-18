@@ -4,8 +4,6 @@ import io.github.fourlastor.construo.task.BaseTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.provider.Property
-import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Optional
@@ -16,8 +14,6 @@ import javax.inject.Inject
 abstract class BuildMacAppBundle @Inject constructor(
     private val fileSystemOperations: FileSystemOperations
 ) : BaseTask() {
-
-    @get:Input abstract val targetName: Property<String>
 
     @get:InputDirectory abstract val jpackageImageBuildDir: DirectoryProperty
 
@@ -31,18 +27,17 @@ abstract class BuildMacAppBundle @Inject constructor(
     @TaskAction
     fun run() {
         fileSystemOperations.copy {
-            it.from(jpackageImageBuildDir.get().dir(targetName.get())) {
+            it.from(jpackageImageBuildDir) {
                 it.into("MacOS")
             }
+            it.from(plist)
             if (icon.isPresent) {
                 it.from(icon) {
                     it.into("Resources")
                 }
             }
-            // TODO plist
             it.into(
                 outputDirectory.get()
-                    .dir("${targetName.get()}.app")
                     .dir("Contents")
             )
         }
