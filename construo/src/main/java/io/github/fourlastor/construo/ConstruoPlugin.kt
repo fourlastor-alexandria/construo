@@ -257,21 +257,28 @@ class ConstruoPlugin : Plugin<Project> {
             }
 
             extension.imageDir.set(jpackageImageBuildDir)
-
-            extension.jpackage {
-                it.imageOutputDir = project.file(jpackageBuildDir)
-                it.skipInstaller = true
-//                it.mainJar = "${pluginExtension.name.get()}.jar"
-//                it.imageName = pluginExtension.name.get()
-//                if (currentOs.isWindows && pluginExtension.winIcon.isPresent) {
-//                    it.imageOptions.addAll(
-//                        listOf(
-//                            "--icon",
-//                            pluginExtension.winIcon.get().asFile.absolutePath
-//                        )
-//                    )
-//                }
-            }
+            extension.jpackageData.set(
+                jpackageBuildDir.flatMap { jpackageBuildDir ->
+                    pluginExtension.name.flatMap { name ->
+                        extension.jpackageData.map {
+                            it.apply {
+                                imageOutputDir = jpackageBuildDir.asFile
+                                skipInstaller = true
+                                imageName = name
+                                // TODO win icon
+                                // if (currentOs.isWindows && pluginExtension.winIcon.isPresent) {
+                                //     it.imageOptions.addAll(
+                                //         listOf(
+                                //             "--icon",
+                                //             pluginExtension.winIcon.get().asFile.absolutePath
+                                //         )
+                                //     )
+                                // }
+                            }
+                        }
+                    }
+                }
+            )
         }
     }
 
