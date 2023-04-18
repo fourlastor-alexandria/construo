@@ -6,8 +6,12 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
+import org.gradle.process.ExecOperations
+import javax.inject.Inject
 
-abstract class GenerateAppRun : BaseTask() {
+abstract class GenerateAppRun @Inject constructor(
+    private val execOperations: ExecOperations
+) : BaseTask() {
 
     @get:Input abstract val executable: Property<String>
 
@@ -23,9 +27,11 @@ abstract class GenerateAppRun : BaseTask() {
                 export ALSOFT_DRIVERS=pulse
                 exec "${executable.get()}" "${'$'}@"
         """.trimIndent()
-        outputFile.get().asFile.writeText(
+        val file = outputFile.get().asFile
+        file.writeText(
             text = script,
             charset = Charsets.UTF_8
         )
+        file.setExecutable(true)
     }
 }
