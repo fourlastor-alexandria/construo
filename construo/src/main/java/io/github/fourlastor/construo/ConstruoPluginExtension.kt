@@ -12,6 +12,7 @@ abstract class ConstruoPluginExtension @Inject constructor(
     objectFactory: ObjectFactory
 ) {
     abstract val name: Property<String>
+    abstract val humanName: Property<String>
     abstract val version: Property<String>
     abstract val outputDir: DirectoryProperty
     abstract val winIcon: RegularFileProperty
