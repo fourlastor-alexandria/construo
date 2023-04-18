@@ -14,7 +14,7 @@ import org.redundent.kotlin.xml.xml
 
 abstract class GeneratePlist : BaseTask() {
 
-    @get:Input abstract val name: Property<String>
+    @get:Input abstract val humanName: Property<String>
 
     @get:Optional @get:Input
     abstract val info: Property<String>
@@ -39,13 +39,13 @@ abstract class GeneratePlist : BaseTask() {
             )
             "dict" {
                 "key" { -"CFBundleGetInfoString" }
-                "string" { -info.orElse(name).get() }
+                "string" { -info.orElse(humanName).get() }
                 "key" { -"CFBundleExecutable" }
                 "string" { -"bin/${executable.get()}" }
                 "key" { -"CFBundleIdentifier" }
                 "string" { -identifier.get() }
                 "key" { -"CFBundleName" }
-                "string" { -name.get() }
+                "string" { -humanName.get() }
                 if (icon.isPresent) {
                     "key" { -"CFBundleIconFile" }
                     "string" { -icon.get().asFile.name }

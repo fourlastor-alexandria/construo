@@ -21,6 +21,8 @@ abstract class BuildMacAppBundle @Inject constructor(
 
     @get:InputDirectory abstract val jpackageImageBuildDir: DirectoryProperty
 
+    @get:InputFile abstract val plist: RegularFileProperty
+
     @get:InputFile @get:Optional
     abstract val icon: RegularFileProperty
 

@@ -8,6 +8,7 @@ import io.github.fourlastor.construo.task.linux.GenerateDesktopEntry
 import io.github.fourlastor.construo.task.linux.PrepareAppImageFiles
 import io.github.fourlastor.construo.task.linux.PrepareAppImageTools
 import io.github.fourlastor.construo.task.macos.BuildMacAppBundle
+import io.github.fourlastor.construo.task.macos.GeneratePlist
 import org.beryx.runtime.RuntimePlugin
 import org.beryx.runtime.data.RuntimePluginExtension
 import org.gradle.api.GradleException
@@ -147,13 +148,27 @@ class ConstruoPlugin : Plugin<Project> {
                     packageLinuxMain.get().dependsOn(packageLinux)
                 }
                 is Target.MacOs -> {
+                    val pListFile = targetDir.map { it.dir("mac").file("Info.plist") }
+                    val generatePlist = tasks.register("generatePList$capitalized", GeneratePlist::class.java) { task ->
+                        task.humanName.set(pluginExtension.humanName)
+                        task.info.set(pluginExtension.info)
+                        task.executable.set(pluginExtension.name)
+                        task.identifier.set(pluginExtension.identifier)
+                        task.icon.set(pluginExtension.macIcon)
+                        task.outputFile.set(pListFile)
+                    }
+
                     val buildMacAppBundle =
                         tasks.register("buildMacAppBundle$capitalized", BuildMacAppBundle::class.java) { task ->
-                            task.dependsOn(tasks.named(RuntimePlugin.getTASK_NAME_RUNTIME()))
+                            task.dependsOn(
+                                tasks.named(RuntimePlugin.getTASK_NAME_RUNTIME()),
+                                generatePlist,
+                            )
                             task.targetName.set(target.name)
                             task.jpackageImageBuildDir.set(jpackageBuildDir)
                             task.outputDirectory.set(macAppDir)
                             task.icon.set(pluginExtension.macIcon)
+                            task.plist.set(pListFile)
                         }
 
                     buildMacAppBundles.get().dependsOn(buildMacAppBundle)
