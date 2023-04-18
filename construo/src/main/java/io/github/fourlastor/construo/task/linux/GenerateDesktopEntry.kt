@@ -1,5 +1,6 @@
 package io.github.fourlastor.construo.task.linux
 
+import io.github.fourlastor.construo.Architecture
 import io.github.fourlastor.construo.task.BaseTask
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
@@ -15,6 +16,10 @@ abstract class GenerateDesktopEntry : BaseTask() {
 
     @get:Input abstract val executable: Property<String>
 
+    @get:Input abstract val version: Property<String>
+
+    @get:Input abstract val architecture: Property<Architecture>
+
     @get:OutputFile abstract val outputFile: RegularFileProperty
 
     @get:Optional @get:InputFile
@@ -28,6 +33,9 @@ abstract class GenerateDesktopEntry : BaseTask() {
                 [Desktop Entry]
                 Name=${name.get()}
                 Exec=${executable.get()}
+                X-AppImage-Name${name.get()}
+                X-AppImage-Version${version.get()}
+                X-AppImage-Arch${architecture.get().arch}
                 """.trimIndent()
             )
             if (icon.isPresent) {
