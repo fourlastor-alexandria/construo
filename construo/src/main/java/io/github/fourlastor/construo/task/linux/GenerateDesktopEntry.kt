@@ -12,7 +12,7 @@ import org.gradle.api.tasks.TaskAction
 
 abstract class GenerateDesktopEntry : BaseTask() {
 
-    @get:Input abstract val name: Property<String>
+    @get:Input abstract val humanName: Property<String>
 
     @get:Input abstract val executable: Property<String>
 
@@ -31,9 +31,9 @@ abstract class GenerateDesktopEntry : BaseTask() {
             appendLine(
                 """
                 [Desktop Entry]
-                Name=${name.get()}
+                Name=${humanName.get()}
                 Exec=${executable.get()}
-                X-AppImage-Name${name.get()}
+                X-AppImage-Name${humanName.get()}
                 X-AppImage-Version${version.get()}
                 X-AppImage-Arch${architecture.get().arch}
                 """.trimIndent()

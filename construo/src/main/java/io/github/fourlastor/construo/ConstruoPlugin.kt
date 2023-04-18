@@ -86,19 +86,21 @@ class ConstruoPlugin : Plugin<Project> {
             }
             when (target) {
                 is Target.Linux -> {
-                    val generateAppRun = tasks.register("generateAppRun$capitalized", GenerateAppRun::class.java) { task ->
-                        task.executable.set(pluginExtension.name)
-                        task.outputFile.set(templateAppDir.map { it.file("AppRun") })
-                    }
+                    val generateAppRun =
+                        tasks.register("generateAppRun$capitalized", GenerateAppRun::class.java) { task ->
+                            task.executable.set(pluginExtension.name)
+                            task.outputFile.set(templateAppDir.map { it.file("AppRun") })
+                        }
 
-                    val generateDesktopEntry = tasks.create("generateDesktopEntry$capitalized", GenerateDesktopEntry::class.java) { task ->
-                        task.icon.set(pluginExtension.linuxIcon)
-                        task.name.set(pluginExtension.humanName)
-                        task.executable.set(pluginExtension.name)
-                        task.version.set(pluginExtension.version)
-                        task.architecture.set(target.architecture)
-                        task.outputFile.set(templateAppDir.map { it.file("game.desktop") })
-                    }
+                    val generateDesktopEntry =
+                        tasks.create("generateDesktopEntry$capitalized", GenerateDesktopEntry::class.java) { task ->
+                            task.icon.set(pluginExtension.linuxIcon)
+                            task.humanName.set(pluginExtension.humanName)
+                            task.executable.set(pluginExtension.name)
+                            task.version.set(pluginExtension.version)
+                            task.architecture.set(target.architecture)
+                            task.outputFile.set(templateAppDir.map { it.file("game.desktop") })
+                        }
 
                     val prepareAppImageFiles = tasks.register(
                         "prepareAppImageFiles$capitalized",
