@@ -15,6 +15,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
         with:
           arguments: assemble
+          build-root-directory: construo
   check-format:
     runs-on: ubuntu-latest
     steps:
