@@ -86,6 +86,16 @@ class ConstruoPlugin : Plugin<Project> {
                 }
             }
 
+            project.extensions.configure(RuntimePluginExtension::class.java) { extension ->
+                extension.targetPlatform(target.name) {
+                    it.setJdkHome(
+                        it.jdkDownload(
+                            "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.4.1%2B1/OpenJDK17U-jdk_x64_linux_hotspot_17.0.4.1_1.tar.gz"
+                        )
+                    )
+                }
+            }
+
             when (target) {
                 is Target.Linux -> {
                     val linuxAppDir = targetBuildDir.map { it.dir(APP_DIR_NAME) }

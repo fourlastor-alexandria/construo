@@ -13,6 +13,11 @@ plugins {
 java.sourceCompatibility = JavaVersion.VERSION_1_8
 java.targetCompatibility = JavaVersion.VERSION_1_8
 
+repositories {
+    mavenCentral()
+    gradlePluginPortal()
+}
+
 spotless {
     isEnforceCheck = false
     kotlin {
@@ -76,8 +81,4 @@ publishing {
 //    val signingPassword: String? by project
 //    useInMemoryPgpKeys(signingKey, signingPassword)
 //    sign(publishing.publications["mavenJava"])
-//}
-
-//construo {
-//
 //}
