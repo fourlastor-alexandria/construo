@@ -6,6 +6,7 @@ plugins {
     `java-gradle-plugin`
     `maven-publish`
     signing
+    alias(libs.plugins.nexus.publish)
     alias(libs.plugins.spotless)
     alias(libs.plugins.jetbrains.kotlin.jvm)
 }
@@ -44,6 +45,20 @@ dependencies {
     implementation(libs.download)
     implementation(libs.xmlBuilder)
 }
+
+val libVersion: String by project
+val publishGroup = "io.github.fourlastor.gdx"
+
+
+group = publishGroup
+version = libVersion
+
+nexusPublishing {
+    repositories {
+        sonatype()
+    }
+}
+
 
 publishing {
     publications {

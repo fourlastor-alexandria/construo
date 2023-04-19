@@ -1,6 +1,13 @@
 import io.github.fourlastor.construo.Architecture
 import io.github.fourlastor.construo.Target
 
+buildscript {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
 @Suppress(
     // known false positive: https://youtrack.jetbrains.com/issue/KTIJ-19369
     "DSL_SCOPE_VIOLATION"
