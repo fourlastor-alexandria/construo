@@ -48,6 +48,9 @@ application {
 }
 
 construo {
+    name.set("hi")
+    humanName.set("Hello World")
+    version.set("0.0.0")
     targets {
         create<Target.Linux>("linuxX64") {
             architecture.set(Architecture.X64)
