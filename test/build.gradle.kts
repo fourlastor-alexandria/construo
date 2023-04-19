@@ -1,15 +1,27 @@
 import io.github.fourlastor.construo.Architecture
 import io.github.fourlastor.construo.Target
 
+@Suppress(
+    // known false positive: https://youtrack.jetbrains.com/issue/KTIJ-19369
+    "DSL_SCOPE_VIOLATION"
+)
 plugins {
     java
     application
+    alias(libs.plugins.spotless)
     id("io.github.fourlastor.gdx.construo")
 }
 
 group = "io.github.fourlastor.gdx"
 version = "1.0.0"
 
+
+spotless {
+    isEnforceCheck = false
+    java {
+        palantirJavaFormat()
+    }
+}
 
 repositories {
     mavenCentral()
