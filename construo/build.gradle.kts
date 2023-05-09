@@ -3,12 +3,11 @@
     "DSL_SCOPE_VIOLATION"
 )
 plugins {
-    `java-gradle-plugin`
+    `kotlin-dsl`
     `maven-publish`
     signing
     alias(libs.plugins.nexus.publish)
     alias(libs.plugins.spotless)
-    alias(libs.plugins.jetbrains.kotlin.jvm)
 }
 
 java.sourceCompatibility = JavaVersion.VERSION_1_8
@@ -33,7 +32,7 @@ java {
 
 gradlePlugin {
     plugins {
-        create("construo") {
+        register("construo") {
             id = "io.github.fourlastor.gdx.construo"
             implementationClass = "io.github.fourlastor.construo.ConstruoPlugin"
         }

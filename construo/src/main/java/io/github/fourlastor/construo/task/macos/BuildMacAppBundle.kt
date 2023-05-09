@@ -27,16 +27,16 @@ abstract class BuildMacAppBundle @Inject constructor(
     @TaskAction
     fun run() {
         fileSystemOperations.copy {
-            it.from(jpackageImageBuildDir) {
-                it.into("MacOS")
+            from(jpackageImageBuildDir) {
+                into("MacOS")
             }
-            it.from(plist)
+            from(plist)
             if (icon.isPresent) {
-                it.from(icon) {
-                    it.into("Resources")
+                from(icon) {
+                    into("Resources")
                 }
             }
-            it.into(
+            into(
                 outputDirectory.get()
                     .dir("Contents")
             )

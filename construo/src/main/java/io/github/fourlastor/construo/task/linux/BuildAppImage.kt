@@ -31,13 +31,13 @@ abstract class BuildAppImage @Inject constructor(
     @TaskAction
     fun run() {
         execOperations.exec {
-            it.setWorkingDir(imagesToolsDir)
+            setWorkingDir(imagesToolsDir)
             val architecture = architecture.get()
             val arch = architecture.arch
-            it.environment(mapOf("ARCH" to arch))
+            environment(mapOf("ARCH" to arch))
             val appImageTemplateDirPath = imageDir.asFile.get().absolutePath
             val targetPath = appImageFile.asFile.get().absolutePath
-            it.commandLine(
+            commandLine(
                 "./appimagetool-x86_64.AppImage",
                 "-n",
                 appImageTemplateDirPath,

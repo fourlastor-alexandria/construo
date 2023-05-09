@@ -25,12 +25,12 @@ abstract class PrepareAppImageFiles @Inject constructor(
     @TaskAction
     fun run() {
         fileSystemOperations.copy {
-            it.from(jpackageImageBuildDir)
-            it.from(templateAppDir)
+            from(jpackageImageBuildDir)
+            from(templateAppDir)
             if (icon.isPresent) {
-                it.from(icon)
+                from(icon)
             }
-            it.into(outputDir)
+            into(outputDir)
         }
     }
 }
