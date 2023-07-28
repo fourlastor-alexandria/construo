@@ -28,6 +28,7 @@ abstract class BuildMacAppBundle @Inject constructor(
     fun run() {
         fileSystemOperations.copy {
             from(jpackageImageBuildDir) {
+                exclude("legal")
                 into("MacOS")
             }
             from(plist)
