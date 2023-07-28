@@ -15,9 +15,11 @@ import org.gradle.api.Action
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.bundling.Zip
 import org.gradle.configurationcache.extensions.capitalized
 import org.gradle.internal.os.OperatingSystem
+import java.io.File
 
 class ConstruoPlugin : Plugin<Project> {
     override fun apply(project: Project) {
@@ -30,6 +32,7 @@ class ConstruoPlugin : Plugin<Project> {
         val jpackageBuildDir = baseBuildDir.map { it.dir("jpackage") }
         val baseJpackageImageBuildDir = jpackageBuildDir.map { it.dir("image") }
         val imageToolsDir = baseBuildDir.map { it.dir("appimagetools") }
+        val jdkDir = baseBuildDir.map { it.dir("jdk") }
 
         // Generic tasks, these are lazy because they need to be instantiated only if a specific platform is used.
         val downloadAppImageTools by lazy {
@@ -86,14 +89,36 @@ class ConstruoPlugin : Plugin<Project> {
                 pluginExtension.version.map { version -> "$name-$version-${target.name}" }
             }
 
+            val downloadJdk = tasks.register("downloadJdk$capitalized", Download::class.java) {
+                group = GROUP_NAME
+                src(listOf(target.jdkUrl))
+                dest(target.jdkUrl.flatMap { url ->
+                    val extension = if (url.endsWith(".zip")) "zip" else "tar.gz"
+                    jdkDir.map { it.file("${target.name}.${extension}") }})
+                overwrite(false)
+            }
+
+            val unzipJdk = tasks.register("unzipJdk$capitalized", Copy::class.java) {
+                dependsOn(downloadJdk)
+                from(downloadJdk.map {
+                    if (it.dest.extension == "zip") {
+                        project.zipTree(it.dest)
+                    } else {
+                        project.tarTree(it.dest)
+                    }
+                })
+                into(jdkDir.map { it.dir(target.name) })
+            }
+
+            tasks.named(RuntimePlugin.getTASK_NAME_JRE()) {
+                dependsOn(unzipJdk)
+            }
+
             project.extensions.configure(RuntimePluginExtension::class.java) {
                 targetPlatform(target.name) {
-                    @Suppress("INACCESSIBLE_TYPE")
-                    setJdkHome(
-                        jdkDownload(
-                            "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.4.1%2B1/OpenJDK17U-jdk_x64_linux_hotspot_17.0.4.1_1.tar.gz"
-                        )
-                    )
+                    val folder = jdkDir.map { it.dir(target.name) }.get().asFile
+                    val jdkHome = folder.walkTopDown().first { File(it, "bin/java").isFile || File(it, "bin/java.exe").isFile }
+                    setJdkHome(jdkHome.absolutePath)
                 }
             }
 

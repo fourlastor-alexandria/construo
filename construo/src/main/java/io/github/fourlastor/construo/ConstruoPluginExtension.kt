@@ -31,6 +31,7 @@ abstract class ConstruoPluginExtension @Inject constructor(
 interface Target : Named {
 
     val architecture: Property<Architecture>
+    val jdkUrl: Property<String>
     interface Linux : Target
     interface MacOs : Target
     interface Windows : Target
