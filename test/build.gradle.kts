@@ -39,13 +39,22 @@ tasks.test {
 }
 
 application {
+    applicationName = "game"
     mainClass.set("io.github.fourlastor.gdx.Main")
 }
 
+tasks.withType<Jar> {
+    manifest {
+        attributes.put("Main-Class", "io.github.fourlastor.gdx.Main")
+    }
+}
+
 construo {
-    name.set("hi")
-    humanName.set("Hello World")
+    name.set("game")
+    humanName.set("Game")
     version.set("0.0.0")
+    linuxIcon.set(rootProject.file("icon.png"))
+    outputDir.set(rootProject.file("dist"))
     targets {
         create<Target.Linux>("linuxX64") {
             architecture.set(Architecture.X64)
@@ -55,6 +64,7 @@ construo {
         }
         create<Target.MacOs>("macX64") {
             architecture.set(Architecture.X64)
+            identifier.set("io.github.fourlastor.Game")
         }
         create<Target.Windows>("winX64") {
             architecture.set(Architecture.X64)
