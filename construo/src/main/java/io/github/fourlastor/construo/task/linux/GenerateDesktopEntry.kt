@@ -6,7 +6,6 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
-import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 
@@ -22,8 +21,7 @@ abstract class GenerateDesktopEntry : BaseTask() {
 
     @get:OutputFile abstract val outputFile: RegularFileProperty
 
-    @get:Optional @get:InputFile
-    abstract val icon: RegularFileProperty
+    @get:InputFile abstract val icon: RegularFileProperty
 
     @TaskAction
     fun run() {
@@ -33,9 +31,9 @@ abstract class GenerateDesktopEntry : BaseTask() {
                 [Desktop Entry]
                 Name=${humanName.get()}
                 Exec=${executable.get()}
-                X-AppImage-Name${humanName.get()}
-                X-AppImage-Version${version.get()}
-                X-AppImage-Arch${architecture.get().arch}
+                X-AppImage-Name=${humanName.get()}
+                X-AppImage-Version=${version.get()}
+                X-AppImage-Arch=${architecture.get().arch}
                 """.trimIndent()
             )
             if (icon.isPresent) {

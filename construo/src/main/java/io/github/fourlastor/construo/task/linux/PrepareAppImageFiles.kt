@@ -25,7 +25,9 @@ abstract class PrepareAppImageFiles @Inject constructor(
     @TaskAction
     fun run() {
         fileSystemOperations.copy {
-            from(jpackageImageBuildDir)
+            from(jpackageImageBuildDir) {
+                exclude("legal")
+            }
             from(templateAppDir)
             if (icon.isPresent) {
                 from(icon)
