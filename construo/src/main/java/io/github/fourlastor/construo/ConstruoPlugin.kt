@@ -78,14 +78,12 @@ class ConstruoPlugin : Plugin<Project> {
         pluginExtension.targets.all (Action {
             val target = this
             val targetBuildDir = baseBuildDir.map { it.dir(target.name) }
-            val targetJpackageImageBuildDir = baseJpackageImageBuildDir.map { it.dir(target.name) }
+            val targetJpackageImageBuildDir = baseJpackageImageBuildDir.map { it.dir("${project.name}-${target.name}") }
 
             val capitalized = target.name.capitalized()
             val targetArchiveFileName = pluginExtension.name.map { "$it-${target.name}.zip" }
             val packageDestination = pluginExtension.name.flatMap { name ->
-                pluginExtension.version.flatMap { version ->
-                    pluginExtension.outputDir.map { it.dir("$name-$version-${target.name}") }
-                }
+                pluginExtension.version.map { version -> "$name-$version-${target.name}" }
             }
 
             project.extensions.configure(RuntimePluginExtension::class.java) {
@@ -244,37 +242,6 @@ class ConstruoPlugin : Plugin<Project> {
                 val templateUrl = ConstruoPlugin::class.java.getResource("/unixrun.mustache")
                     ?: throw GradleException("Unix script template not found")
                 unixScriptTemplate = project.resources.text.fromUri(templateUrl.toURI()).asFile()
-            }
-            @Suppress("INACCESSIBLE_TYPE")
-            if (currentOs.isLinux) {
-                targetPlatform("linux-x64") {
-                    setJdkHome(
-                        jdkDownload(
-                            "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.4.1%2B1/OpenJDK17U-jdk_x64_linux_hotspot_17.0.4.1_1.tar.gz"
-                        )
-                    )
-                }
-                targetPlatform("linux-aarch64") {
-                    setJdkHome(
-                        jdkDownload(
-                            "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.4.1%2B1/OpenJDK17U-jdk_aarch64_linux_hotspot_17.0.4.1_1.tar.gz"
-                        )
-                    )
-                }
-                targetPlatform("mac-x64") {
-                    setJdkHome(
-                        jdkDownload(
-                            "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.4.1%2B1/OpenJDK17U-jdk_x64_mac_hotspot_17.0.4.1_1.tar.gz"
-                        )
-                    )
-                }
-                targetPlatform("mac-aarch64") {
-                    setJdkHome(
-                        jdkDownload(
-                            "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.4.1%2B1/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.4.1_1.tar.gz"
-                        )
-                    )
-                }
             }
 
             imageDir.set(baseJpackageImageBuildDir)
