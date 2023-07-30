@@ -102,3 +102,7 @@ gradle-app.setting
 
 # Construo output dir
 dist/
+
+# Local jdk
+
+jdk/
