@@ -76,6 +76,12 @@ construo {
     }
 }
 
+// Used while using composite builds for beryx runtime plugin
+// as it requires java 11 to run
+runtime {
+    javaHome.set("${rootDir.absolutePath}/jdk/jdk-17.0.8+7")
+}
+
 dependencies {
     implementation(libs.gdx.core)
     nativesDesktop(libs.gdx.platform)
