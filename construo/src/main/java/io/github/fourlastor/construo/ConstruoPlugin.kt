@@ -10,6 +10,7 @@ import io.github.fourlastor.construo.task.linux.PrepareAppImageTools
 import io.github.fourlastor.construo.task.macos.BuildMacAppBundle
 import io.github.fourlastor.construo.task.macos.GeneratePlist
 import org.beryx.runtime.RuntimePlugin
+import org.beryx.runtime.RuntimeTask
 import org.beryx.runtime.data.RuntimePluginExtension
 import org.gradle.api.Action
 import org.gradle.api.GradleException
@@ -19,6 +20,7 @@ import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.bundling.Zip
 import org.gradle.configurationcache.extensions.capitalized
 import org.gradle.internal.os.OperatingSystem
+import org.gradle.kotlin.dsl.withType
 import java.io.File
 
 class ConstruoPlugin : Plugin<Project> {
@@ -78,7 +80,7 @@ class ConstruoPlugin : Plugin<Project> {
         }
 
         // Register the correct tasks for each target
-        pluginExtension.targets.all (Action {
+        pluginExtension.targets.all(Action {
             val target = this
             val targetBuildDir = baseBuildDir.map { it.dir(target.name) }
             val targetJpackageImageBuildDir = baseJpackageImageBuildDir.map { it.dir("${project.name}-${target.name}") }
@@ -94,11 +96,13 @@ class ConstruoPlugin : Plugin<Project> {
                 src(listOf(target.jdkUrl))
                 dest(target.jdkUrl.flatMap { url ->
                     val extension = if (url.endsWith(".zip")) "zip" else "tar.gz"
-                    jdkDir.map { it.file("${target.name}.${extension}") }})
+                    jdkDir.map { it.file("${target.name}.${extension}") }
+                })
                 overwrite(false)
             }
-
+            val targetJdkDir = jdkDir.map { it.dir(target.name) }
             val unzipJdk = tasks.register("unzipJdk$capitalized", Copy::class.java) {
+                group = GROUP_NAME
                 dependsOn(downloadJdk)
                 from(downloadJdk.map {
                     if (it.dest.extension == "zip") {
@@ -106,20 +110,28 @@ class ConstruoPlugin : Plugin<Project> {
                     } else {
                         project.tarTree(it.dest)
                     }
-                })
-                into(jdkDir.map { it.dir(target.name) })
-            }
-
-            tasks.named(RuntimePlugin.getTASK_NAME_JRE()) {
-                dependsOn(unzipJdk)
+                }) {
+                    exclude("**/legal/**")
+                }
+                into(targetJdkDir)
+                doFirst {
+                    targetJdkDir.get().asFile.deleteRecursively()
+                }
             }
 
             project.extensions.configure(RuntimePluginExtension::class.java) {
                 targetPlatform(target.name) {
-                    val folder = jdkDir.map { it.dir(target.name) }.get().asFile
-                    val jdkHome = folder.walkTopDown().first { File(it, "bin/java").isFile || File(it, "bin/java.exe").isFile }
-                    setJdkHome(jdkHome.absolutePath)
+                    setJdkHome(targetJdkDir.map { root ->
+                        root.asFile
+                            .walkTopDown()
+                            .first { File(it, "bin/java").isFile || File(it, "bin/java.exe").isFile }
+                            .absolutePath
+                    })
                 }
+            }
+
+            tasks.named(RuntimePlugin.getTASK_NAME_JRE()) {
+                dependsOn(unzipJdk)
             }
 
             when (target) {
@@ -151,11 +163,13 @@ class ConstruoPlugin : Plugin<Project> {
                         "prepareAppImageFiles$capitalized",
                         PrepareAppImageFiles::class.java
                     ) {
+                        val runtimeTask = tasks.withType<RuntimeTask>()
                         dependsOn(
-                            tasks.named(RuntimePlugin.getTASK_NAME_RUNTIME()),
+                            runtimeTask,
                             generateAppRun,
                             generateDesktopEntry
                         )
+                        inputs.dir(targetJpackageImageBuildDir)
                         templateAppDir.set(targetTemplateAppDir)
                         jpackageImageBuildDir.set(targetJpackageImageBuildDir)
                         outputDir.set(linuxAppDir)
