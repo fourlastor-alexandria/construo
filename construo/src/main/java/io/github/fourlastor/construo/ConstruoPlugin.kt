@@ -11,6 +11,8 @@ import io.github.fourlastor.construo.task.macos.BuildMacAppBundle
 import io.github.fourlastor.construo.task.macos.GeneratePlist
 import org.beryx.runtime.RuntimePlugin
 import org.beryx.runtime.RuntimeTask
+import org.beryx.runtime.data.JPackageData
+import org.beryx.runtime.data.LauncherData
 import org.beryx.runtime.data.RuntimePluginExtension
 import org.gradle.api.Action
 import org.gradle.api.GradleException
@@ -286,22 +288,20 @@ class ConstruoPlugin : Plugin<Project> {
             imageDir.set(baseJpackageImageBuildDir)
             jpackageData.set(
                 jpackageBuildDir.flatMap { jpackageBuildDir ->
-                    pluginExtension.name.flatMap { name ->
-                        jpackageData.map {
-                            it.apply {
-                                imageOutputDir = jpackageBuildDir.asFile
-                                skipInstaller = true
-                                imageName = name
-                                // TODO win icon
-                                // if (currentOs.isWindows && pluginExtension.winIcon.isPresent) {
-                                //     it.imageOptions.addAll(
-                                //         listOf(
-                                //             "--icon",
-                                //             pluginExtension.winIcon.get().asFile.absolutePath
-                                //         )
-                                //     )
-                                // }
-                            }
+                    pluginExtension.name.map { name ->
+                        JPackageData(project, LauncherData(project)).apply {
+                            imageOutputDir = jpackageBuildDir.asFile
+                            skipInstaller = true
+                            imageName = name
+                            // TODO win icon
+                            // if (currentOs.isWindows && pluginExtension.winIcon.isPresent) {
+                            //     it.imageOptions.addAll(
+                            //         listOf(
+                            //             "--icon",
+                            //             pluginExtension.winIcon.get().asFile.absolutePath
+                            //         )
+                            //     )
+                            // }
                         }
                     }
                 }
