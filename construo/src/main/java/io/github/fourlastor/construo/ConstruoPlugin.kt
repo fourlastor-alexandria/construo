@@ -243,7 +243,7 @@ class ConstruoPlugin : Plugin<Project> {
                 }
 
                 is Target.Windows -> {
-                    tasks.register("packageWindows", Zip::class.java) {
+                    tasks.register("package$capitalized", Zip::class.java) {
                         group = GROUP_NAME
                         archiveFileName.set(targetArchiveFileName)
                         destinationDirectory.set(pluginExtension.outputDir)
