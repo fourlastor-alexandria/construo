@@ -40,7 +40,6 @@ gradlePlugin {
 }
 
 dependencies {
-    implementation(libs.beryxRuntime)
     implementation(libs.download)
     implementation(libs.xmlBuilder)
 }

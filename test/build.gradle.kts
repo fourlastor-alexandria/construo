@@ -60,26 +60,20 @@ construo {
             architecture.set(Architecture.X64)
             jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_x64_linux_hotspot_17.0.8_7.tar.gz")
         }
-        create<Target.Linux>("linuxAarch64") {
-            architecture.set(Architecture.AARCH64)
-            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_aarch64_linux_hotspot_17.0.8_7.tar.gz")
-        }
-        create<Target.MacOs>("macX64") {
-            architecture.set(Architecture.X64)
-            identifier.set("io.github.fourlastor.Game")
-            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_x64_mac_hotspot_17.0.8_7.tar.gz")
-        }
-        create<Target.Windows>("winX64") {
-            architecture.set(Architecture.X64)
-            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_x64_windows_hotspot_17.0.8_7.zip")
-        }
+//        create<Target.Linux>("linuxAarch64") {
+//            architecture.set(Architecture.AARCH64)
+//            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_aarch64_linux_hotspot_17.0.8_7.tar.gz")
+//        }
+//        create<Target.MacOs>("macX64") {
+//            architecture.set(Architecture.X64)
+//            identifier.set("io.github.fourlastor.Game")
+//            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_x64_mac_hotspot_17.0.8_7.tar.gz")
+//        }
+//        create<Target.Windows>("winX64") {
+//            architecture.set(Architecture.X64)
+//            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_x64_windows_hotspot_17.0.8_7.zip")
+//        }
     }
-}
-
-// Used while using composite builds for beryx runtime plugin
-// as it requires java 11 to run
-runtime {
-    javaHome.set("${rootDir.absolutePath}/jdk/jdk-17.0.8+7")
 }
 
 dependencies {

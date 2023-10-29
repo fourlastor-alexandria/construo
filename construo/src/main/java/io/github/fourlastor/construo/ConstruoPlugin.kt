@@ -2,6 +2,7 @@ package io.github.fourlastor.construo
 
 import de.undercouch.gradle.tasks.download.Download
 import de.undercouch.gradle.tasks.download.DownloadTaskPlugin
+import io.github.fourlastor.construo.task.jvm.CreateRuntimeImageTask
 import io.github.fourlastor.construo.task.linux.BuildAppImage
 import io.github.fourlastor.construo.task.linux.GenerateAppRun
 import io.github.fourlastor.construo.task.linux.GenerateDesktopEntry
@@ -9,26 +10,19 @@ import io.github.fourlastor.construo.task.linux.PrepareAppImageFiles
 import io.github.fourlastor.construo.task.linux.PrepareAppImageTools
 import io.github.fourlastor.construo.task.macos.BuildMacAppBundle
 import io.github.fourlastor.construo.task.macos.GeneratePlist
-import org.beryx.runtime.RuntimePlugin
-import org.beryx.runtime.RuntimeTask
-import org.beryx.runtime.data.JPackageData
-import org.beryx.runtime.data.LauncherData
-import org.beryx.runtime.data.RuntimePluginExtension
 import org.gradle.api.Action
-import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.file.Directory
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.bundling.Zip
 import org.gradle.configurationcache.extensions.capitalized
-import org.gradle.internal.os.OperatingSystem
-import org.gradle.kotlin.dsl.withType
+import org.gradle.jvm.tasks.Jar
 import java.io.File
 
 class ConstruoPlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        val currentOs: OperatingSystem = OperatingSystem.current()
-        project.plugins.apply(RuntimePlugin::class.java)
         project.plugins.apply(DownloadTaskPlugin::class.java)
         val pluginExtension = project.extensions.create("construo", ConstruoPluginExtension::class.java)
         val tasks = project.tasks
@@ -121,19 +115,18 @@ class ConstruoPlugin : Plugin<Project> {
                 }
             }
 
-            project.extensions.configure(RuntimePluginExtension::class.java) {
-                targetPlatform(target.name) {
-                    setJdkHome(targetJdkDir.map { root ->
-                        root.asFile
-                            .walkTopDown()
-                            .first { File(it, "bin/java").isFile || File(it, "bin/java.exe").isFile }
-                            .absolutePath
-                    })
-                }
-            }
+            val targetJdkRoot = targetJdkDir.findJdkRoot()
+            // TODO this shouldn't be the targetJdk, but the one used to run commands
+            val runningJdkRoot = targetJdkDir.findJdkRoot()
 
-            tasks.named(RuntimePlugin.getTASK_NAME_JRE()) {
-                dependsOn(unzipJdk)
+            val createRuntimeImage = tasks.register("createRuntimeImage$capitalized", CreateRuntimeImageTask::class.java) {
+                // should depend on the jar/shadow jar task
+                val jarTask = tasks.named("jar", Jar::class.java).get()
+                dependsOn(unzipJdk, jarTask)
+                jdkRoot.set(runningJdkRoot)
+                jarFile.set(jarTask.archiveFile)
+                modulesDir.set(targetJdkRoot.map { it.dir("jmods") })
+                output.set(targetJpackageImageBuildDir)
             }
 
             when (target) {
@@ -165,13 +158,11 @@ class ConstruoPlugin : Plugin<Project> {
                         "prepareAppImageFiles$capitalized",
                         PrepareAppImageFiles::class.java
                     ) {
-                        val runtimeTask = tasks.withType<RuntimeTask>()
                         dependsOn(
-                            runtimeTask,
+                            createRuntimeImage,
                             generateAppRun,
                             generateDesktopEntry
                         )
-                        inputs.dir(targetJpackageImageBuildDir)
                         templateAppDir.set(targetTemplateAppDir)
                         jpackageImageBuildDir.set(targetJpackageImageBuildDir)
                         outputDir.set(linuxAppDir)
@@ -221,7 +212,7 @@ class ConstruoPlugin : Plugin<Project> {
                     val buildMacAppBundle =
                         tasks.register("buildMacAppBundle$capitalized", BuildMacAppBundle::class.java) {
                             dependsOn(
-                                tasks.named(RuntimePlugin.getTASK_NAME_RUNTIME()),
+                                createRuntimeImage,
                                 generatePlist
                             )
                             jpackageImageBuildDir.set(targetJpackageImageBuildDir)
@@ -249,64 +240,21 @@ class ConstruoPlugin : Plugin<Project> {
                         group = GROUP_NAME
                         archiveFileName.set(targetArchiveFileName)
                         destinationDirectory.set(pluginExtension.outputDir)
-                        dependsOn(tasks.named(RuntimePlugin.getTASK_NAME_JPACKAGE_IMAGE()))
+                        dependsOn(createRuntimeImage)
                         from(jpackageBuildDir)
                         into(packageDestination)
                     }
                 }
             }
         })
+    }
 
-        project.extensions.configure(RuntimePluginExtension::class.java) {
-            options.value(
-                listOf(
-                    "--strip-debug",
-                    "--compress",
-                    "2",
-                    "--no-header-files",
-                    "--no-man-pages"
-                )
-            )
-            if (currentOs.isWindows) {
-                options.add("--strip-native-commands")
-            }
-            modules.value(
-                listOf(
-                    "java.base",
-                    "java.desktop",
-                    "java.logging",
-                    "jdk.incubator.foreign",
-                    "jdk.unsupported"
-                )
-            )
-            launcher {
-                val templateUrl = ConstruoPlugin::class.java.getResource("/unixrun.mustache")
-                    ?: throw GradleException("Unix script template not found")
-                unixScriptTemplate = project.resources.text.fromUri(templateUrl.toURI()).asFile()
-            }
-
-            imageDir.set(baseJpackageImageBuildDir)
-            jpackageData.set(
-                jpackageBuildDir.flatMap { jpackageBuildDir ->
-                    pluginExtension.name.map { name ->
-                        JPackageData(project, LauncherData(project)).apply {
-                            imageOutputDir = jpackageBuildDir.asFile
-                            skipInstaller = true
-                            imageName = name
-                            // TODO win icon
-                            // if (currentOs.isWindows && pluginExtension.winIcon.isPresent) {
-                            //     it.imageOptions.addAll(
-                            //         listOf(
-                            //             "--icon",
-                            //             pluginExtension.winIcon.get().asFile.absolutePath
-                            //         )
-                            //     )
-                            // }
-                        }
-                    }
-                }
-            )
-        }
+    private fun Provider<Directory>.findJdkRoot() = this.map { root ->
+        val dir = root.asFile
+            .walkTopDown()
+            .first { it.isDirectory && (File(it, "bin/java").isFile || File(it, "bin/java.exe").isFile) }
+            .path
+        root.dir(dir)
     }
 
     companion object {
