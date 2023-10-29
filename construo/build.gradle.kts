@@ -39,8 +39,14 @@ gradlePlugin {
     }
 }
 
+repositories {
+    mavenCentral()
+    maven(uri("https://artifactory.nimblygames.com/artifactory/ng-public-release/"))
+}
+
 dependencies {
     implementation(libs.download)
+    implementation(libs.packr)
     implementation(libs.xmlBuilder)
 }
 

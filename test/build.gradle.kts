@@ -5,6 +5,7 @@ buildscript {
     repositories {
         mavenCentral()
         gradlePluginPortal()
+        maven(uri("https://artifactory.nimblygames.com/artifactory/ng-public-release/"))
     }
 }
 
@@ -55,6 +56,7 @@ construo {
     version.set("0.0.0")
     linuxIcon.set(rootProject.file("icon.png"))
     outputDir.set(rootProject.file("dist"))
+    mainClassName.set("io.github.fourlastor.gdx.Main")
     targets {
         create<Target.Linux>("linuxX64") {
             architecture.set(Architecture.X64)
@@ -64,15 +66,20 @@ construo {
 //            architecture.set(Architecture.AARCH64)
 //            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_aarch64_linux_hotspot_17.0.8_7.tar.gz")
 //        }
-//        create<Target.MacOs>("macX64") {
-//            architecture.set(Architecture.X64)
-//            identifier.set("io.github.fourlastor.Game")
-//            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_x64_mac_hotspot_17.0.8_7.tar.gz")
-//        }
-//        create<Target.Windows>("winX64") {
-//            architecture.set(Architecture.X64)
-//            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_x64_windows_hotspot_17.0.8_7.zip")
-//        }
+        create<Target.MacOs>("macX64") {
+            architecture.set(Architecture.X64)
+            identifier.set("io.github.fourlastor.Game")
+            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_x64_mac_hotspot_17.0.8_7.tar.gz")
+        }
+        create<Target.MacOs>("macM1") {
+            architecture.set(Architecture.AARCH64)
+            identifier.set("io.github.fourlastor.Game")
+            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.8_7.tar.gz")
+        }
+        create<Target.Windows>("winX64") {
+            architecture.set(Architecture.X64)
+            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_x64_windows_hotspot_17.0.8_7.zip")
+        }
     }
 }
 

@@ -17,14 +17,14 @@ import javax.inject.Inject
 
 abstract class CreateRuntimeImageTask @Inject constructor(
     private val execOperations: ExecOperations
-): BaseTask() {
+) : BaseTask() {
 
     @get:InputDirectory
     abstract val jdkRoot: DirectoryProperty
 
     @get:Optional
     @get:InputDirectory
-    abstract val modulesDir: DirectoryProperty
+    abstract val targetJdkRoot: DirectoryProperty
 
     @get:Optional
     @get:Input
@@ -46,8 +46,12 @@ abstract class CreateRuntimeImageTask @Inject constructor(
         execOperations.exec {
             setWorkingDir(jdkRoot)
             val modulesCommaSeparated = modulesList.joinToString(separator = ",")
-            val modulesPath = modulesDir.getOrElse(jdkRoot.map { it.dir("jmods") }.get())
-                .asFile.absolutePath
+            val root = if (targetJdkRoot.isPresent) {
+                targetJdkRoot
+            } else {
+                jdkRoot
+            }.map { it.dir("jmods") }
+            val modulesPath = root.get().asFile.absolutePath
             commandLine(
                 "./bin/jlink",
                 "--no-header-files",
@@ -72,7 +76,7 @@ abstract class CreateRuntimeImageTask @Inject constructor(
                 "./bin/jdeps",
                 "--ignore-missing-deps",
                 "--list-deps",
-                jarFile.get().asFile.absolutePath,
+                jarFile.get().asFile.absolutePath
             )
         }
         it.toByteArray().toString(Charset.defaultCharset())
