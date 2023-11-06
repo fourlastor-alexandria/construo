@@ -39,6 +39,6 @@ interface Target : Named {
 }
 
 enum class Architecture(val arch: String) {
-    X64("x64"),
+    X86_64("x64"),
     AARCH64("aarch64"),
 }

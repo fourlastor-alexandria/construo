@@ -3,7 +3,7 @@ package io.github.fourlastor.construo
 import de.undercouch.gradle.tasks.download.Download
 import de.undercouch.gradle.tasks.download.DownloadTaskPlugin
 import io.github.fourlastor.construo.task.jvm.CreateRuntimeImageTask
-import io.github.fourlastor.construo.task.jvm.PackrTask
+import io.github.fourlastor.construo.task.jvm.RoastTask
 import io.github.fourlastor.construo.task.linux.BuildAppImage
 import io.github.fourlastor.construo.task.linux.GenerateAppRun
 import io.github.fourlastor.construo.task.linux.GenerateDesktopEntry
@@ -31,6 +31,7 @@ class ConstruoPlugin : Plugin<Project> {
         val jpackageBuildDir = baseBuildDir.map { it.dir("jpackage") }
         val baseJpackageImageBuildDir = jpackageBuildDir.map { it.dir("image") }
         val imageToolsDir = baseBuildDir.map { it.dir("appimagetools") }
+        val roastExeDir = baseBuildDir.map { it.dir("roast-exe") }
         val jdkDir = baseBuildDir.map { it.dir("jdk") }
 
         // Generic tasks, these are lazy because they need to be instantiated only if a specific platform is used.
@@ -45,6 +46,19 @@ class ConstruoPlugin : Plugin<Project> {
                     )
                 )
                 dest(imageToolsDir)
+                overwrite(false)
+            }
+        }
+        val downloadRoast by lazy {
+            // TODO: add other architectures
+            tasks.register("downloadRoast", Download::class.java) {
+                group = GROUP_NAME
+                src(
+                    listOf(
+                        "https://github.com/fourlastor-alexandria/roast/releases/download/v0.0.1/roast-linux-x86_64"
+                    )
+                )
+                dest(roastExeDir)
                 overwrite(false)
             }
         }
@@ -136,17 +150,19 @@ class ConstruoPlugin : Plugin<Project> {
                         output.set(targetJpackageImageBuildDir)
                     }
 
-                val packr = tasks.register("packr$capitalized", PackrTask::class.java) {
-                    jdkRoot.set(createRuntimeImage.flatMap { it.output })
-                    appName.set(pluginExtension.name)
-                    mainClassName.set(pluginExtension.mainClassName)
-                    packingTarget.set(target)
-                    jarFile.set(jarFileLocation)
-                    output.set(targetBuildDir.map { it.dir("packr") })
-                }
-
                 when (target) {
                     is Target.Linux -> {
+                        val downloadRoastTask = downloadRoast.get()
+                        tasks.register("roast$capitalized", RoastTask::class.java) {
+                            dependsOn(downloadRoastTask)
+                            jdkRoot.set(createRuntimeImage.flatMap { it.output })
+                            appName.set(pluginExtension.name)
+                            mainClassName.set(pluginExtension.mainClassName)
+                            jarFile.set(jarFileLocation)
+                            output.set(targetBuildDir.map { it.dir("roast") })
+                            // TODO: file should be arch dependent
+                            roastExe.set(roastExeDir.map { it.file("roast-linux-x86_64") })
+                        }
                         val linuxAppDir = targetBuildDir.map { it.dir(APP_DIR_NAME) }
                         val targetTemplateAppDir = targetBuildDir.map { it.dir("Game.AppDir.Template") }
                         val linuxAppImage = targetBuildDir.flatMap { dir ->

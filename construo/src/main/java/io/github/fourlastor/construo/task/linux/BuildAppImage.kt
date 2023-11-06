@@ -50,6 +50,6 @@ abstract class BuildAppImage @Inject constructor(
 
     private fun runtimeName(arch: Architecture): String = when (arch) {
         Architecture.AARCH64 -> "runtime-aarch64"
-        Architecture.X64 -> "runtime-x86_64"
+        Architecture.X86_64 -> "runtime-x86_64"
     }
 }
