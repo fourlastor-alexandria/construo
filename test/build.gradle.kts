@@ -5,7 +5,6 @@ buildscript {
     repositories {
         mavenCentral()
         gradlePluginPortal()
-        maven(uri("https://artifactory.nimblygames.com/artifactory/ng-public-release/"))
     }
 }
 
