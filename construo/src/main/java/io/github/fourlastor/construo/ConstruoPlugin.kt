@@ -137,7 +137,7 @@ class ConstruoPlugin : Plugin<Project> {
 
                 val runningJdkRoot = File(System.getProperty("java.home"))
                 val jdkTargetRoot = project.layout.dir(unzipJdk.map { it.destinationDir }).findJdkRoot()
-                // check for shadow jar as well
+                // TODO: check for shadow jar as well
                 val jarTask = tasks.named("jar", Jar::class.java)
                 val jarFileLocation = jarTask.flatMap { it.archiveFile }
 
