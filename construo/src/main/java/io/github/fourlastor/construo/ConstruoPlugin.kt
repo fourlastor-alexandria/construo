@@ -2,6 +2,8 @@ package io.github.fourlastor.construo
 
 import de.undercouch.gradle.tasks.download.Download
 import de.undercouch.gradle.tasks.download.DownloadTaskPlugin
+import io.github.fourlastor.construo.task.jvm.CreateRuntimeImageTask
+import io.github.fourlastor.construo.task.jvm.RoastTask
 import io.github.fourlastor.construo.task.linux.BuildAppImage
 import io.github.fourlastor.construo.task.linux.GenerateAppRun
 import io.github.fourlastor.construo.task.linux.GenerateDesktopEntry
@@ -9,26 +11,19 @@ import io.github.fourlastor.construo.task.linux.PrepareAppImageFiles
 import io.github.fourlastor.construo.task.linux.PrepareAppImageTools
 import io.github.fourlastor.construo.task.macos.BuildMacAppBundle
 import io.github.fourlastor.construo.task.macos.GeneratePlist
-import org.beryx.runtime.RuntimePlugin
-import org.beryx.runtime.RuntimeTask
-import org.beryx.runtime.data.JPackageData
-import org.beryx.runtime.data.LauncherData
-import org.beryx.runtime.data.RuntimePluginExtension
 import org.gradle.api.Action
-import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.file.Directory
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.bundling.Zip
 import org.gradle.configurationcache.extensions.capitalized
-import org.gradle.internal.os.OperatingSystem
-import org.gradle.kotlin.dsl.withType
+import org.gradle.jvm.tasks.Jar
 import java.io.File
 
 class ConstruoPlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        val currentOs: OperatingSystem = OperatingSystem.current()
-        project.plugins.apply(RuntimePlugin::class.java)
         project.plugins.apply(DownloadTaskPlugin::class.java)
         val pluginExtension = project.extensions.create("construo", ConstruoPluginExtension::class.java)
         val tasks = project.tasks
@@ -36,6 +31,7 @@ class ConstruoPlugin : Plugin<Project> {
         val jpackageBuildDir = baseBuildDir.map { it.dir("jpackage") }
         val baseJpackageImageBuildDir = jpackageBuildDir.map { it.dir("image") }
         val imageToolsDir = baseBuildDir.map { it.dir("appimagetools") }
+        val roastExeDir = baseBuildDir.map { it.dir("roast-exe") }
         val jdkDir = baseBuildDir.map { it.dir("jdk") }
 
         // Generic tasks, these are lazy because they need to be instantiated only if a specific platform is used.
@@ -50,6 +46,19 @@ class ConstruoPlugin : Plugin<Project> {
                     )
                 )
                 dest(imageToolsDir)
+                overwrite(false)
+            }
+        }
+        val downloadRoast by lazy {
+            // TODO: add other architectures
+            tasks.register("downloadRoast", Download::class.java) {
+                group = GROUP_NAME
+                src(
+                    listOf(
+                        "https://github.com/fourlastor-alexandria/roast/releases/download/v0.0.1/roast-linux-x86_64"
+                    )
+                )
+                dest(roastExeDir)
                 overwrite(false)
             }
         }
@@ -82,231 +91,203 @@ class ConstruoPlugin : Plugin<Project> {
         }
 
         // Register the correct tasks for each target
-        pluginExtension.targets.all(Action {
-            val target = this
-            val targetBuildDir = baseBuildDir.map { it.dir(target.name) }
-            val targetJpackageImageBuildDir = baseJpackageImageBuildDir.map { it.dir("${project.name}-${target.name}") }
+        pluginExtension.targets.all(
+            Action {
+                val target = this
+                val targetBuildDir = baseBuildDir.map { it.dir(target.name) }
+                val targetJpackageImageBuildDir = baseJpackageImageBuildDir.map { it.dir("${project.name}-${target.name}") }
 
-            val capitalized = target.name.capitalized()
-            val targetArchiveFileName = pluginExtension.name.map { "$it-${target.name}.zip" }
-            val packageDestination = pluginExtension.name.flatMap { name ->
-                pluginExtension.version.map { version -> "$name-$version-${target.name}" }
-            }
-
-            val downloadJdk = tasks.register("downloadJdk$capitalized", Download::class.java) {
-                group = GROUP_NAME
-                src(listOf(target.jdkUrl))
-                dest(target.jdkUrl.flatMap { url ->
-                    val extension = if (url.endsWith(".zip")) "zip" else "tar.gz"
-                    jdkDir.map { it.file("${target.name}.${extension}") }
-                })
-                overwrite(false)
-            }
-            val targetJdkDir = jdkDir.map { it.dir(target.name) }
-            val unzipJdk = tasks.register("unzipJdk$capitalized", Copy::class.java) {
-                group = GROUP_NAME
-                dependsOn(downloadJdk)
-                from(downloadJdk.map {
-                    if (it.dest.extension == "zip") {
-                        project.zipTree(it.dest)
-                    } else {
-                        project.tarTree(it.dest)
-                    }
-                }) {
-                    exclude("**/legal/**")
+                val capitalized = target.name.capitalized()
+                val targetArchiveFileName = pluginExtension.name.map { "$it-${target.name}.zip" }
+                val packageDestination = pluginExtension.name.flatMap { name ->
+                    pluginExtension.version.map { version -> "$name-$version-${target.name}" }
                 }
-                into(targetJdkDir)
-                doFirst {
-                    targetJdkDir.get().asFile.deleteRecursively()
+
+                val downloadJdk = tasks.register("downloadJdk$capitalized", Download::class.java) {
+                    group = GROUP_NAME
+                    src(listOf(target.jdkUrl))
+                    dest(
+                        target.jdkUrl.flatMap { url ->
+                            val extension = if (url.endsWith(".zip")) "zip" else "tar.gz"
+                            jdkDir.map { it.file("${target.name}.$extension") }
+                        }
+                    )
+                    overwrite(false)
                 }
-            }
-
-            project.extensions.configure(RuntimePluginExtension::class.java) {
-                targetPlatform(target.name) {
-                    setJdkHome(targetJdkDir.map { root ->
-                        root.asFile
-                            .walkTopDown()
-                            .first { File(it, "bin/java").isFile || File(it, "bin/java.exe").isFile }
-                            .absolutePath
-                    })
-                }
-            }
-
-            tasks.named(RuntimePlugin.getTASK_NAME_JRE()) {
-                dependsOn(unzipJdk)
-            }
-
-            when (target) {
-                is Target.Linux -> {
-                    val linuxAppDir = targetBuildDir.map { it.dir(APP_DIR_NAME) }
-                    val targetTemplateAppDir = targetBuildDir.map { it.dir("Game.AppDir.Template") }
-                    val linuxAppImage = targetBuildDir.flatMap { dir ->
-                        target.architecture.map { architecture ->
-                            dir.file("$APP_IMAGE_NAME-${architecture.arch}")
+                val targetJdkDir = jdkDir.map { it.dir(target.name) }
+                val unzipJdk = tasks.register("unzipJdk$capitalized", Copy::class.java) {
+                    group = GROUP_NAME
+                    dependsOn(downloadJdk)
+                    from(
+                        downloadJdk.map {
+                            if (it.dest.extension == "zip") {
+                                project.zipTree(it.dest)
+                            } else {
+                                project.tarTree(it.dest)
+                            }
                         }
-                    }
-                    val generateAppRun =
-                        tasks.register("generateAppRun$capitalized", GenerateAppRun::class.java) {
-                            executable.set(pluginExtension.name)
-                            outputFile.set(targetTemplateAppDir.map { it.file("AppRun") })
-                        }
-
-                    val generateDesktopEntry =
-                        tasks.create("generateDesktopEntry$capitalized", GenerateDesktopEntry::class.java) {
-                            icon.set(pluginExtension.linuxIcon)
-                            humanName.set(pluginExtension.humanName)
-                            executable.set(pluginExtension.name)
-                            version.set(pluginExtension.version)
-                            architecture.set(target.architecture)
-                            outputFile.set(targetTemplateAppDir.map { it.file("game.desktop") })
-                        }
-
-                    val prepareAppImageFiles = tasks.register(
-                        "prepareAppImageFiles$capitalized",
-                        PrepareAppImageFiles::class.java
                     ) {
-                        val runtimeTask = tasks.withType<RuntimeTask>()
-                        dependsOn(
-                            runtimeTask,
-                            generateAppRun,
-                            generateDesktopEntry
-                        )
-                        inputs.dir(targetJpackageImageBuildDir)
-                        templateAppDir.set(targetTemplateAppDir)
-                        jpackageImageBuildDir.set(targetJpackageImageBuildDir)
-                        outputDir.set(linuxAppDir)
-                        icon.set(pluginExtension.linuxIcon)
+                        exclude("**/legal/**")
                     }
-
-                    val prepareAppImageToolsTask = prepareAppImageTools.get()
-                    val buildAppImage = tasks.register("buildAppImage$capitalized", BuildAppImage::class.java) {
-                        dependsOn(
-                            prepareAppImageToolsTask,
-                            prepareAppImageFiles
-                        )
-                        imagesToolsDir.set(imageToolsDir)
-                        imageDir.set(linuxAppDir)
-                        appImageFile.set(linuxAppImage)
-                        architecture.set(target.architecture)
+                    into(targetJdkDir)
+                    doFirst {
+                        targetJdkDir.get().asFile.deleteRecursively()
                     }
-
-                    buildAppImages.get().dependsOn(buildAppImage)
-
-                    val packageLinux = tasks.register("package$capitalized", Zip::class.java) {
-                        group = GROUP_NAME
-                        dependsOn(buildAppImage)
-                        archiveFileName.set(targetArchiveFileName)
-                        destinationDirectory.set(pluginExtension.outputDir)
-                        from(linuxAppImage)
-                        into(packageDestination)
-                    }
-
-                    packageLinuxMain.get().dependsOn(packageLinux)
                 }
 
-                is Target.MacOs -> {
-                    val macAppDir = targetBuildDir.flatMap { dir ->
-                        pluginExtension.name.map { dir.dir("$it.app") }
-                    }
-                    val pListFile = targetBuildDir.map { it.file("Info.plist") }
-                    val generatePlist = tasks.register("generatePList$capitalized", GeneratePlist::class.java) {
-                        humanName.set(pluginExtension.humanName)
-                        info.set(pluginExtension.info)
-                        executable.set(pluginExtension.name)
-                        identifier.set(pluginExtension.identifier)
-                        icon.set(pluginExtension.macIcon)
-                        outputFile.set(pListFile)
+                val runningJdkRoot = File(System.getProperty("java.home"))
+                val jdkTargetRoot = project.layout.dir(unzipJdk.map { it.destinationDir }).findJdkRoot()
+                // TODO: check for shadow jar as well
+                val jarTask = tasks.named("jar", Jar::class.java)
+                val jarFileLocation = jarTask.flatMap { it.archiveFile }
+
+                val createRuntimeImage =
+                    tasks.register("createRuntimeImage$capitalized", CreateRuntimeImageTask::class.java) {
+                        dependsOn(unzipJdk, jarTask)
+                        jdkRoot.set(runningJdkRoot)
+                        jarFile.set(jarFileLocation)
+                        targetJdkRoot.set(jdkTargetRoot)
+                        output.set(targetJpackageImageBuildDir)
                     }
 
-                    val buildMacAppBundle =
-                        tasks.register("buildMacAppBundle$capitalized", BuildMacAppBundle::class.java) {
+                when (target) {
+                    is Target.Linux -> {
+                        val downloadRoastTask = downloadRoast.get()
+                        tasks.register("roast$capitalized", RoastTask::class.java) {
+                            dependsOn(downloadRoastTask)
+                            jdkRoot.set(createRuntimeImage.flatMap { it.output })
+                            appName.set(pluginExtension.name)
+                            mainClassName.set(pluginExtension.mainClassName)
+                            jarFile.set(jarFileLocation)
+                            output.set(targetBuildDir.map { it.dir("roast") })
+                            // TODO: file should be arch dependent
+                            roastExe.set(roastExeDir.map { it.file("roast-linux-x86_64") })
+                        }
+                        val linuxAppDir = targetBuildDir.map { it.dir(APP_DIR_NAME) }
+                        val targetTemplateAppDir = targetBuildDir.map { it.dir("Game.AppDir.Template") }
+                        val linuxAppImage = targetBuildDir.flatMap { dir ->
+                            target.architecture.map { architecture ->
+                                dir.file("$APP_IMAGE_NAME-${architecture.arch}")
+                            }
+                        }
+                        val generateAppRun =
+                            tasks.register("generateAppRun$capitalized", GenerateAppRun::class.java) {
+                                executable.set(pluginExtension.name)
+                                outputFile.set(targetTemplateAppDir.map { it.file("AppRun") })
+                            }
+
+                        val generateDesktopEntry =
+                            tasks.create("generateDesktopEntry$capitalized", GenerateDesktopEntry::class.java) {
+                                icon.set(pluginExtension.linuxIcon)
+                                humanName.set(pluginExtension.humanName)
+                                executable.set(pluginExtension.name)
+                                version.set(pluginExtension.version)
+                                architecture.set(target.architecture)
+                                outputFile.set(targetTemplateAppDir.map { it.file("game.desktop") })
+                            }
+
+                        val prepareAppImageFiles = tasks.register(
+                            "prepareAppImageFiles$capitalized",
+                            PrepareAppImageFiles::class.java
+                        ) {
                             dependsOn(
-                                tasks.named(RuntimePlugin.getTASK_NAME_RUNTIME()),
-                                generatePlist
+                                createRuntimeImage,
+                                generateAppRun,
+                                generateDesktopEntry
                             )
+                            templateAppDir.set(targetTemplateAppDir)
                             jpackageImageBuildDir.set(targetJpackageImageBuildDir)
-                            outputDirectory.set(macAppDir)
+                            outputDir.set(linuxAppDir)
+                            icon.set(pluginExtension.linuxIcon)
+                        }
+
+                        val prepareAppImageToolsTask = prepareAppImageTools.get()
+                        val buildAppImage = tasks.register("buildAppImage$capitalized", BuildAppImage::class.java) {
+                            dependsOn(
+                                prepareAppImageToolsTask,
+                                prepareAppImageFiles
+                            )
+                            imagesToolsDir.set(imageToolsDir)
+                            imageDir.set(linuxAppDir)
+                            appImageFile.set(linuxAppImage)
+                            architecture.set(target.architecture)
+                        }
+
+                        buildAppImages.get().dependsOn(buildAppImage)
+
+                        val packageLinux = tasks.register("package$capitalized", Zip::class.java) {
+                            group = GROUP_NAME
+                            dependsOn(buildAppImage)
+                            archiveFileName.set(targetArchiveFileName)
+                            destinationDirectory.set(pluginExtension.outputDir)
+                            from(linuxAppImage)
+                            into(packageDestination)
+                        }
+
+                        packageLinuxMain.get().dependsOn(packageLinux)
+                    }
+
+                    is Target.MacOs -> {
+                        val macAppDir = targetBuildDir.flatMap { dir ->
+                            pluginExtension.name.map { dir.dir("$it.app") }
+                        }
+                        val pListFile = targetBuildDir.map { it.file("Info.plist") }
+                        val generatePlist = tasks.register("generatePList$capitalized", GeneratePlist::class.java) {
+                            humanName.set(pluginExtension.humanName)
+                            info.set(pluginExtension.info)
+                            executable.set(pluginExtension.name)
+                            identifier.set(pluginExtension.identifier)
                             icon.set(pluginExtension.macIcon)
-                            plist.set(pListFile)
+                            outputFile.set(pListFile)
                         }
 
-                    buildMacAppBundles.get().dependsOn(buildMacAppBundle)
+                        val buildMacAppBundle =
+                            tasks.register("buildMacAppBundle$capitalized", BuildMacAppBundle::class.java) {
+                                dependsOn(
+                                    createRuntimeImage,
+                                    generatePlist
+                                )
+                                jpackageImageBuildDir.set(targetJpackageImageBuildDir)
+                                outputDirectory.set(macAppDir)
+                                icon.set(pluginExtension.macIcon)
+                                plist.set(pListFile)
+                            }
 
-                    val packageMac = tasks.register("package$capitalized", Zip::class.java) {
-                        group = GROUP_NAME
-                        archiveFileName.set(targetArchiveFileName)
-                        destinationDirectory.set(pluginExtension.outputDir)
-                        dependsOn(buildMacAppBundle)
-                        from(macAppDir)
-                        into(packageDestination)
+                        buildMacAppBundles.get().dependsOn(buildMacAppBundle)
+
+                        val packageMac = tasks.register("package$capitalized", Zip::class.java) {
+                            group = GROUP_NAME
+                            archiveFileName.set(targetArchiveFileName)
+                            destinationDirectory.set(pluginExtension.outputDir)
+                            dependsOn(buildMacAppBundle)
+                            from(macAppDir)
+                            into(packageDestination)
+                        }
+
+                        packageMacMain.get().dependsOn(packageMac)
                     }
 
-                    packageMacMain.get().dependsOn(packageMac)
-                }
-
-                is Target.Windows -> {
-                    tasks.register("package$capitalized", Zip::class.java) {
-                        group = GROUP_NAME
-                        archiveFileName.set(targetArchiveFileName)
-                        destinationDirectory.set(pluginExtension.outputDir)
-                        dependsOn(tasks.named(RuntimePlugin.getTASK_NAME_JPACKAGE_IMAGE()))
-                        from(jpackageBuildDir)
-                        into(packageDestination)
-                    }
-                }
-            }
-        })
-
-        project.extensions.configure(RuntimePluginExtension::class.java) {
-            options.value(
-                listOf(
-                    "--strip-debug",
-                    "--compress",
-                    "2",
-                    "--no-header-files",
-                    "--no-man-pages"
-                )
-            )
-            if (currentOs.isWindows) {
-                options.add("--strip-native-commands")
-            }
-            modules.value(
-                listOf(
-                    "java.base",
-                    "java.desktop",
-                    "java.logging",
-                    "jdk.incubator.foreign",
-                    "jdk.unsupported"
-                )
-            )
-            launcher {
-                val templateUrl = ConstruoPlugin::class.java.getResource("/unixrun.mustache")
-                    ?: throw GradleException("Unix script template not found")
-                unixScriptTemplate = project.resources.text.fromUri(templateUrl.toURI()).asFile()
-            }
-
-            imageDir.set(baseJpackageImageBuildDir)
-            jpackageData.set(
-                jpackageBuildDir.flatMap { jpackageBuildDir ->
-                    pluginExtension.name.map { name ->
-                        JPackageData(project, LauncherData(project)).apply {
-                            imageOutputDir = jpackageBuildDir.asFile
-                            skipInstaller = true
-                            imageName = name
-                            // TODO win icon
-                            // if (currentOs.isWindows && pluginExtension.winIcon.isPresent) {
-                            //     it.imageOptions.addAll(
-                            //         listOf(
-                            //             "--icon",
-                            //             pluginExtension.winIcon.get().asFile.absolutePath
-                            //         )
-                            //     )
-                            // }
+                    is Target.Windows -> {
+                        tasks.register("package$capitalized", Zip::class.java) {
+                            group = GROUP_NAME
+                            archiveFileName.set(targetArchiveFileName)
+                            destinationDirectory.set(pluginExtension.outputDir)
+                            dependsOn(createRuntimeImage)
+                            from(jpackageBuildDir)
+                            into(packageDestination)
                         }
                     }
                 }
-            )
-        }
+            }
+        )
+    }
+
+    private fun Provider<Directory>.findJdkRoot() = this.map { root ->
+        val dir = root.asFile
+            .walkTopDown()
+            .firstOrNull { File(it, "bin/java").isFile || File(it, "bin/java.exe").isFile }
+            ?.path ?: throw RuntimeException("Couldn't find java home in ${root.asFile.absolutePath}")
+        root.dir(dir)
     }
 
     companion object {

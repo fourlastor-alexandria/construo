@@ -8,6 +8,8 @@ plugins {
     signing
     alias(libs.plugins.nexus.publish)
     alias(libs.plugins.spotless)
+    alias(libs.plugins.jetbrains.kotlin.jvm)
+    alias(libs.plugins.jetbrains.kotlin.serialization)
 }
 
 java.sourceCompatibility = JavaVersion.VERSION_1_8
@@ -40,9 +42,9 @@ gradlePlugin {
 }
 
 dependencies {
-    implementation(libs.beryxRuntime)
     implementation(libs.download)
     implementation(libs.xmlBuilder)
+    implementation(libs.kotlinx.serialization)
 }
 
 val libVersion: String by project
