@@ -31,7 +31,7 @@ class ConstruoPlugin : Plugin<Project> {
         val baseRuntimeImageBuildDir = baseBuildDir.map { it.dir("runtime-image") }
         val imageToolsDir = baseBuildDir.map { it.dir("appimagetools") }
         val roastZipDir = baseBuildDir.map { it.dir("roast-zip") }
-        val roastExeDir = baseBuildDir.map { it.dir("roast-exe") }
+        val baseRoastExeDir = baseBuildDir.map { it.dir("roast-exe") }
         val jdkDir = baseBuildDir.map { it.dir("jdk") }
 
         // Generic tasks, these are lazy because they need to be instantiated only if a specific platform is used.
@@ -160,10 +160,11 @@ class ConstruoPlugin : Plugin<Project> {
                     dest(roastZipDir)
                     overwrite(false)
                 }
+                val targetRoastExeDir = baseRoastExeDir.map { it.dir(target.name) }
                 val unzipRoast = tasks.register("unzipRoast$capitalized", Copy::class.java) {
                     dependsOn(downloadRoast)
                     from(project.zipTree(roastZipDir.map { it.file("roast-${target.roastName()}.zip") }))
-                    into(roastExeDir)
+                    into(targetRoastExeDir)
                 }
 
                 val packageRoast = tasks.register("roast$capitalized", RoastTask::class.java) {
@@ -174,7 +175,7 @@ class ConstruoPlugin : Plugin<Project> {
                     mainClassName.set(pluginExtension.mainClassName)
                     jarFile.set(jarFileLocation)
                     output.set(targetRoastDir)
-                    roastExe.set(roastExeDir.map { it.file("roast-${target.roastName()}") })
+                    roastExe.set(targetRoastExeDir.map { it.file("roast-${target.roastName()}") })
                 }
 
                 when (target) {
