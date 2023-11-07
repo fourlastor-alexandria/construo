@@ -28,8 +28,7 @@ class ConstruoPlugin : Plugin<Project> {
         val pluginExtension = project.extensions.create("construo", ConstruoPluginExtension::class.java)
         val tasks = project.tasks
         val baseBuildDir = project.layout.buildDirectory.dir("construo")
-        val jpackageBuildDir = baseBuildDir.map { it.dir("jpackage") }
-        val baseJpackageImageBuildDir = jpackageBuildDir.map { it.dir("image") }
+        val baseRuntimeImageBuildDir = baseBuildDir.map { it.dir("runtime-image") }
         val imageToolsDir = baseBuildDir.map { it.dir("appimagetools") }
         val roastZipDir = baseBuildDir.map { it.dir("roast-zip") }
         val roastExeDir = baseBuildDir.map { it.dir("roast-exe") }
@@ -83,7 +82,7 @@ class ConstruoPlugin : Plugin<Project> {
             Action {
                 val target = this
                 val targetBuildDir = baseBuildDir.map { it.dir(target.name) }
-                val targetJpackageImageBuildDir = baseJpackageImageBuildDir.map { it.dir("${project.name}-${target.name}") }
+                val targetRuntimeImageBuildDir = baseRuntimeImageBuildDir.map { it.dir("${project.name}-${target.name}") }
 
                 val capitalized = target.name.capitalized()
                 val targetArchiveFileName = pluginExtension.name.map { "$it-${target.name}.zip" }
@@ -122,6 +121,7 @@ class ConstruoPlugin : Plugin<Project> {
                         targetJdkDir.get().asFile.deleteRecursively()
                     }
                 }
+                val targetRoastDir = targetBuildDir.map { it.dir("roast") }
 
                 val runningJdkRoot = File(System.getProperty("java.home"))
                 val jdkTargetRoot = project.layout.dir(unzipJdk.map { it.destinationDir }).findJdkRoot()
@@ -135,7 +135,7 @@ class ConstruoPlugin : Plugin<Project> {
                         jdkRoot.set(runningJdkRoot)
                         jarFile.set(jarFileLocation)
                         targetJdkRoot.set(jdkTargetRoot)
-                        output.set(targetJpackageImageBuildDir)
+                        output.set(targetRuntimeImageBuildDir)
                     }
 
                 fun Target.roastName(): String = when (this) {
@@ -166,14 +166,14 @@ class ConstruoPlugin : Plugin<Project> {
                     into(roastExeDir)
                 }
 
-                tasks.register("roast$capitalized", RoastTask::class.java) {
+                val packageRoast = tasks.register("roast$capitalized", RoastTask::class.java) {
                     dependsOn(unzipRoast)
                     targetProperty.set(target)
                     jdkRoot.set(createRuntimeImage.flatMap { it.output })
                     appName.set(pluginExtension.name)
                     mainClassName.set(pluginExtension.mainClassName)
                     jarFile.set(jarFileLocation)
-                    output.set(targetBuildDir.map { it.dir("roast") })
+                    output.set(targetRoastDir)
                     roastExe.set(roastExeDir.map { it.file("roast-${target.roastName()}") })
                 }
 
@@ -212,7 +212,8 @@ class ConstruoPlugin : Plugin<Project> {
                                 generateDesktopEntry
                             )
                             templateAppDir.set(targetTemplateAppDir)
-                            jpackageImageBuildDir.set(targetJpackageImageBuildDir)
+                            // TODO: this should get the files from the roast dir instead
+                            jpackageImageBuildDir.set(targetRuntimeImageBuildDir)
                             outputDir.set(linuxAppDir)
                             icon.set(pluginExtension.linuxIcon)
                         }
@@ -263,7 +264,8 @@ class ConstruoPlugin : Plugin<Project> {
                                     createRuntimeImage,
                                     generatePlist
                                 )
-                                jpackageImageBuildDir.set(targetJpackageImageBuildDir)
+                                // TODO: this should get the files from the roast dir instead
+                                jpackageImageBuildDir.set(targetRuntimeImageBuildDir)
                                 outputDirectory.set(macAppDir)
                                 icon.set(pluginExtension.macIcon)
                                 plist.set(pListFile)
@@ -288,8 +290,8 @@ class ConstruoPlugin : Plugin<Project> {
                             group = GROUP_NAME
                             archiveFileName.set(targetArchiveFileName)
                             destinationDirectory.set(pluginExtension.outputDir)
-                            dependsOn(createRuntimeImage)
-                            from(jpackageBuildDir)
+                            dependsOn(packageRoast)
+                            from(targetRoastDir)
                             into(packageDestination)
                         }
                     }
