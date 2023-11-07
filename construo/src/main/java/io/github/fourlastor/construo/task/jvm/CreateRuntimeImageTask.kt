@@ -10,6 +10,7 @@ import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
+import org.gradle.internal.os.OperatingSystem
 import org.gradle.process.ExecOperations
 import java.io.ByteArrayOutputStream
 import java.nio.charset.Charset
@@ -53,7 +54,7 @@ abstract class CreateRuntimeImageTask @Inject constructor(
             }.map { it.dir("jmods") }
             val modulesPath = root.get().asFile.absolutePath
             commandLine(
-                "./bin/jlink",
+                executableForOs("./bin/jlink"),
                 "--no-header-files",
                 "--no-man-pages",
                 "--compress=2",
@@ -73,7 +74,7 @@ abstract class CreateRuntimeImageTask @Inject constructor(
             setWorkingDir(jdkRoot)
             standardOutput = it
             commandLine(
-                "./bin/jdeps",
+                executableForOs("./bin/jdeps"),
                 "--ignore-missing-deps",
                 "--list-deps",
                 jarFile.get().asFile.absolutePath
@@ -81,4 +82,10 @@ abstract class CreateRuntimeImageTask @Inject constructor(
         }
         it.toByteArray().toString(Charset.defaultCharset())
     }.splitToSequence("\n").map { it.trim() }.toList()
+
+    private fun executableForOs(executable: String): String = OperatingSystem.current().let { currentOs ->
+        if (currentOs.isWindows) {
+            "$executable.exe"
+        } else executable
+    }
 }
