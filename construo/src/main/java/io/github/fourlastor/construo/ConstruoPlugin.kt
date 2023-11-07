@@ -31,6 +31,7 @@ class ConstruoPlugin : Plugin<Project> {
         val jpackageBuildDir = baseBuildDir.map { it.dir("jpackage") }
         val baseJpackageImageBuildDir = jpackageBuildDir.map { it.dir("image") }
         val imageToolsDir = baseBuildDir.map { it.dir("appimagetools") }
+        val roastZipDir = baseBuildDir.map { it.dir("roast-zip") }
         val roastExeDir = baseBuildDir.map { it.dir("roast-exe") }
         val jdkDir = baseBuildDir.map { it.dir("jdk") }
 
@@ -46,19 +47,6 @@ class ConstruoPlugin : Plugin<Project> {
                     )
                 )
                 dest(imageToolsDir)
-                overwrite(false)
-            }
-        }
-        val downloadRoast by lazy {
-            // TODO: add other architectures
-            tasks.register("downloadRoast", Download::class.java) {
-                group = GROUP_NAME
-                src(
-                    listOf(
-                        "https://github.com/fourlastor-alexandria/roast/releases/download/v0.0.1/roast-linux-x86_64"
-                    )
-                )
-                dest(roastExeDir)
                 overwrite(false)
             }
         }
@@ -150,19 +138,46 @@ class ConstruoPlugin : Plugin<Project> {
                         output.set(targetJpackageImageBuildDir)
                     }
 
+                fun Target.roastName(): String = when (this) {
+                    is Target.Windows -> {
+                        check(architecture.get() == Architecture.X86_64) { "Only Windows 64 bit is supported" }
+                        "win-64.exe"
+                    }
+                    is Target.Linux -> when (architecture.get()) {
+                        Architecture.X86_64 -> "linux-x86_64"
+                        Architecture.AARCH64 -> "linux-aarch64"
+                    }
+                    is Target.MacOs -> when (architecture.get()) {
+                        Architecture.X86_64 -> "macos-x86_64"
+                        Architecture.AARCH64 -> "macos-aarch64"
+                    }
+                    else -> error("Unsupported target.")
+                }
+
+                val downloadRoast = tasks.register("downloadRoast$capitalized", Download::class.java) {
+                    group = GROUP_NAME
+                    src("https://github.com/fourlastor-alexandria/roast/releases/download/v0.0.2/roast-${target.roastName()}.zip")
+                    dest(roastZipDir)
+                    overwrite(false)
+                }
+                val unzipRoast = tasks.register("unzipRoast$capitalized", Copy::class.java) {
+                    dependsOn(downloadRoast)
+                    from(project.zipTree(roastZipDir.map { it.file("roast-${target.roastName()}.zip") }))
+                    into(roastExeDir)
+                }
+
+                tasks.register("roast$capitalized", RoastTask::class.java) {
+                    dependsOn(unzipRoast)
+                    jdkRoot.set(createRuntimeImage.flatMap { it.output })
+                    appName.set(pluginExtension.name)
+                    mainClassName.set(pluginExtension.mainClassName)
+                    jarFile.set(jarFileLocation)
+                    output.set(targetBuildDir.map { it.dir("roast") })
+                    roastExe.set(roastExeDir.map { it.file("roast-${target.roastName()}") })
+                }
+
                 when (target) {
                     is Target.Linux -> {
-                        val downloadRoastTask = downloadRoast.get()
-                        tasks.register("roast$capitalized", RoastTask::class.java) {
-                            dependsOn(downloadRoastTask)
-                            jdkRoot.set(createRuntimeImage.flatMap { it.output })
-                            appName.set(pluginExtension.name)
-                            mainClassName.set(pluginExtension.mainClassName)
-                            jarFile.set(jarFileLocation)
-                            output.set(targetBuildDir.map { it.dir("roast") })
-                            // TODO: file should be arch dependent
-                            roastExe.set(roastExeDir.map { it.file("roast-linux-x86_64") })
-                        }
                         val linuxAppDir = targetBuildDir.map { it.dir(APP_DIR_NAME) }
                         val targetTemplateAppDir = targetBuildDir.map { it.dir("Game.AppDir.Template") }
                         val linuxAppImage = targetBuildDir.flatMap { dir ->
