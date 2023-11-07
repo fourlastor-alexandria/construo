@@ -7,7 +7,10 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ windows-latest, macos-latest, ubuntu-latest ]
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup
@@ -19,7 +22,7 @@ jobs:
       - name: Build test project
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: assemble
+          arguments: test:roastLinuxX64 test:roastMacM1 test:roastMacX64 test:roastWinX64
   check-format:
     runs-on: ubuntu-latest
     steps:
