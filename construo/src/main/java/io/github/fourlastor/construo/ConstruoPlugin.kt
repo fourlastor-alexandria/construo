@@ -168,6 +168,7 @@ class ConstruoPlugin : Plugin<Project> {
 
                 tasks.register("roast$capitalized", RoastTask::class.java) {
                     dependsOn(unzipRoast)
+                    targetProperty.set(target)
                     jdkRoot.set(createRuntimeImage.flatMap { it.output })
                     appName.set(pluginExtension.name)
                     mainClassName.set(pluginExtension.mainClassName)

@@ -1,5 +1,6 @@
 package io.github.fourlastor.construo.task.jvm
 
+import io.github.fourlastor.construo.Target
 import io.github.fourlastor.construo.task.BaseTask
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -35,6 +36,9 @@ abstract class RoastTask @Inject constructor(
     @get:InputFile
     abstract val jarFile: RegularFileProperty
 
+    @get:Input
+    abstract val targetProperty: Property<Target>
+
     @get:OutputDirectory
     abstract val output: DirectoryProperty
 
@@ -62,7 +66,17 @@ abstract class RoastTask @Inject constructor(
 
         fileSystemOperations.copy {
             from(roastExe)
-            rename { appName.get() }
+            rename {
+                appName.flatMap { name ->
+                    targetProperty.map {
+                        if (it is Target.Windows) {
+                            "$name.exe"
+                        } else {
+                            name
+                        }
+                    }
+                }.get()
+            }
             into(output)
         }
 
