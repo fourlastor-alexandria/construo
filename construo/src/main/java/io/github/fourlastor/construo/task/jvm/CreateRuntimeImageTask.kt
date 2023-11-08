@@ -13,6 +13,7 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.internal.os.OperatingSystem
 import org.gradle.process.ExecOperations
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.nio.charset.Charset
 import javax.inject.Inject
 
@@ -45,7 +46,9 @@ abstract class CreateRuntimeImageTask @Inject constructor(
             outputFile.deleteRecursively()
         }
         execOperations.exec {
-            setWorkingDir(jdkRoot)
+            val javaHome = jdkRoot.asFile.get().walkTopDown()
+                .first { File(it, "bin/java").isFile || File(it, "bin/java.exe").isFile }
+            workingDir = javaHome
             val modulesCommaSeparated = modulesList.joinToString(separator = ",")
             val root = if (targetJdkRoot.isPresent) {
                 targetJdkRoot
