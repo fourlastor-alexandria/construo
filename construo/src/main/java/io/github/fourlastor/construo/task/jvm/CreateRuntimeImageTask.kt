@@ -44,8 +44,9 @@ abstract class CreateRuntimeImageTask @Inject constructor(
         if (outputFile.exists()) {
             outputFile.deleteRecursively()
         }
+        val javaExecName = executableForOs("bin/java")
         val javaHome = jdkRoot.asFile.get().walkTopDown()
-            .first { File(it, "bin/java").isFile || File(it, "bin/java.exe").isFile }
+            .first { File(it, javaExecName).isFile }
         val modulesList = modules.get().takeUnless { it.isEmpty() } ?: guessModulesFromJar(javaHome)
         execOperations.exec {
             val modulesCommaSeparated = modulesList.joinToString(separator = ",")
