@@ -13,27 +13,29 @@ jobs:
         os: [ windows-latest ]
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
       - name: Build construo
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: assemble
-          build-root-directory: construo
+        run: ./gradlew assemble
+        working-directory: ./construo
       - name: Build test project
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: test:roastLinuxX64 --stacktrace
+        run: ./gradlew test:roastLinuxX64 --stacktrace
   check-format:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
       - name: Check code formatting construo
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: spotlessCheck
-          build-root-directory: construo
+        run: ./gradlew spotlessCheck
+        working-directory: ./construo
       - name: Check code formatting test project
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: spotlessCheck
+        run: ./gradlew spotlessCheck
