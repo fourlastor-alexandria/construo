@@ -40,15 +40,14 @@ abstract class CreateRuntimeImageTask @Inject constructor(
 
     @TaskAction
     fun run() {
-        val modulesList = modules.get().takeUnless { it.isEmpty() } ?: guessModulesFromJar()
         val outputFile = output.get().asFile
         if (outputFile.exists()) {
             outputFile.deleteRecursively()
         }
+        val javaHome = jdkRoot.asFile.get().walkTopDown()
+            .first { File(it, "bin/java").isFile || File(it, "bin/java.exe").isFile }
+        val modulesList = modules.get().takeUnless { it.isEmpty() } ?: guessModulesFromJar(javaHome)
         execOperations.exec {
-            val javaHome = jdkRoot.asFile.get().walkTopDown()
-                .first { File(it, "bin/java").isFile || File(it, "bin/java.exe").isFile }
-            workingDir = javaHome
             val modulesCommaSeparated = modulesList.joinToString(separator = ",")
             val root = if (targetJdkRoot.isPresent) {
                 targetJdkRoot
@@ -57,7 +56,7 @@ abstract class CreateRuntimeImageTask @Inject constructor(
             }.map { it.dir("jmods") }
             val modulesPath = root.get().asFile.absolutePath
             commandLine(
-                executableForOs("./bin/jlink"),
+                File(javaHome, executableForOs("bin/jlink")).absolutePath,
                 "--no-header-files",
                 "--no-man-pages",
                 "--compress=2",
@@ -72,12 +71,12 @@ abstract class CreateRuntimeImageTask @Inject constructor(
         }
     }
 
-    private fun guessModulesFromJar(): List<String> = ByteArrayOutputStream().use {
+    private fun guessModulesFromJar(javaHome: File): List<String> = ByteArrayOutputStream().use {
         execOperations.exec {
             setWorkingDir(jdkRoot)
             standardOutput = it
             commandLine(
-                executableForOs("./bin/jdeps"),
+                File(javaHome, executableForOs("bin/jdeps")).absolutePath,
                 "--ignore-missing-deps",
                 "--list-deps",
                 jarFile.get().asFile.absolutePath
