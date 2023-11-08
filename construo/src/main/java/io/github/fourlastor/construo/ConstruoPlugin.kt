@@ -261,12 +261,8 @@ class ConstruoPlugin : Plugin<Project> {
 
                         val buildMacAppBundle =
                             tasks.register("buildMacAppBundle$capitalized", BuildMacAppBundle::class.java) {
-                                dependsOn(
-                                    createRuntimeImage,
-                                    generatePlist
-                                )
-                                // TODO: this should get the files from the roast dir instead
-                                jpackageImageBuildDir.set(targetRuntimeImageBuildDir)
+                                dependsOn(packageRoast, generatePlist)
+                                packagedAppDir.set(targetRoastDir)
                                 outputDirectory.set(macAppDir)
                                 icon.set(pluginExtension.macIcon)
                                 plist.set(pListFile)

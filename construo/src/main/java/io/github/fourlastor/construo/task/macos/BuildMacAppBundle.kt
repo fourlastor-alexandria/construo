@@ -15,7 +15,7 @@ abstract class BuildMacAppBundle @Inject constructor(
     private val fileSystemOperations: FileSystemOperations
 ) : BaseTask() {
 
-    @get:InputDirectory abstract val jpackageImageBuildDir: DirectoryProperty
+    @get:InputDirectory abstract val packagedAppDir: DirectoryProperty
 
     @get:InputFile abstract val plist: RegularFileProperty
 
@@ -26,8 +26,9 @@ abstract class BuildMacAppBundle @Inject constructor(
 
     @TaskAction
     fun run() {
+        fileSystemOperations.delete { delete(outputDirectory) }
         fileSystemOperations.copy {
-            from(jpackageImageBuildDir) {
+            from(packagedAppDir) {
                 exclude("legal")
                 into("MacOS")
             }

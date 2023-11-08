@@ -41,7 +41,7 @@ abstract class GeneratePlist : BaseTask() {
                 "key" { -"CFBundleGetInfoString" }
                 "string" { -info.orElse(humanName).get() }
                 "key" { -"CFBundleExecutable" }
-                "string" { -"bin/${executable.get()}" }
+                "string" { -executable.get() }
                 "key" { -"CFBundleIdentifier" }
                 "string" { -identifier.get() }
                 "key" { -"CFBundleName" }
