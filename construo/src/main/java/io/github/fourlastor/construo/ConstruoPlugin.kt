@@ -4,11 +4,6 @@ import de.undercouch.gradle.tasks.download.Download
 import de.undercouch.gradle.tasks.download.DownloadTaskPlugin
 import io.github.fourlastor.construo.task.jvm.CreateRuntimeImageTask
 import io.github.fourlastor.construo.task.jvm.RoastTask
-import io.github.fourlastor.construo.task.linux.BuildAppImage
-import io.github.fourlastor.construo.task.linux.GenerateAppRun
-import io.github.fourlastor.construo.task.linux.GenerateDesktopEntry
-import io.github.fourlastor.construo.task.linux.PrepareAppImageFiles
-import io.github.fourlastor.construo.task.linux.PrepareAppImageTools
 import io.github.fourlastor.construo.task.macos.BuildMacAppBundle
 import io.github.fourlastor.construo.task.macos.GeneratePlist
 import org.gradle.api.Action
@@ -29,50 +24,13 @@ class ConstruoPlugin : Plugin<Project> {
         val tasks = project.tasks
         val baseBuildDir = project.layout.buildDirectory.dir("construo")
         val baseRuntimeImageBuildDir = baseBuildDir.map { it.dir("runtime-image") }
-        val imageToolsDir = baseBuildDir.map { it.dir("appimagetools") }
         val roastZipDir = baseBuildDir.map { it.dir("roast-zip") }
         val baseRoastExeDir = baseBuildDir.map { it.dir("roast-exe") }
         val jdkDir = baseBuildDir.map { it.dir("jdk") }
 
         // Generic tasks, these are lazy because they need to be instantiated only if a specific platform is used.
-        val downloadAppImageTools by lazy {
-            tasks.register("downloadAppImageTools", Download::class.java) {
-                group = GROUP_NAME
-                src(
-                    listOf(
-                        "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage",
-                        "https://github.com/AppImage/AppImageKit/releases/download/continuous/runtime-x86_64",
-                        "https://github.com/AppImage/AppImageKit/releases/download/continuous/runtime-aarch64"
-                    )
-                )
-                dest(imageToolsDir)
-                overwrite(false)
-            }
-        }
-        val prepareAppImageTools by lazy {
-            val downloadTask = downloadAppImageTools.get()
-            tasks.register("prepareAppImageTools", PrepareAppImageTools::class.java) {
-                imagesToolsDir.set(imageToolsDir)
-                dependsOn(downloadTask)
-            }
-        }
-        val buildAppImages by lazy {
-            tasks.register("buildAppImages") {
-                group = GROUP_NAME
-            }
-        }
-        val packageLinuxMain by lazy {
-            tasks.register("packageLinux") {
-                group = GROUP_NAME
-            }
-        }
         val buildMacAppBundles by lazy {
             tasks.register("buildMacAppBundle") {
-                group = GROUP_NAME
-            }
-        }
-        val packageMacMain by lazy {
-            tasks.register("packageMac") {
                 group = GROUP_NAME
             }
         }
@@ -179,70 +137,15 @@ class ConstruoPlugin : Plugin<Project> {
                 }
 
                 when (target) {
-                    is Target.Linux -> {
-                        val linuxAppDir = targetBuildDir.map { it.dir(APP_DIR_NAME) }
-                        val targetTemplateAppDir = targetBuildDir.map { it.dir("Game.AppDir.Template") }
-                        val linuxAppImage = targetBuildDir.flatMap { dir ->
-                            target.architecture.map { architecture ->
-                                dir.file("$APP_IMAGE_NAME-${architecture.arch}")
-                            }
-                        }
-                        val generateAppRun =
-                            tasks.register("generateAppRun$capitalized", GenerateAppRun::class.java) {
-                                executable.set(pluginExtension.name)
-                                outputFile.set(targetTemplateAppDir.map { it.file("AppRun") })
-                            }
-
-                        val generateDesktopEntry =
-                            tasks.create("generateDesktopEntry$capitalized", GenerateDesktopEntry::class.java) {
-                                icon.set(pluginExtension.linuxIcon)
-                                humanName.set(pluginExtension.humanName)
-                                executable.set(pluginExtension.name)
-                                version.set(pluginExtension.version)
-                                architecture.set(target.architecture)
-                                outputFile.set(targetTemplateAppDir.map { it.file("game.desktop") })
-                            }
-
-                        val prepareAppImageFiles = tasks.register(
-                            "prepareAppImageFiles$capitalized",
-                            PrepareAppImageFiles::class.java
-                        ) {
-                            dependsOn(
-                                createRuntimeImage,
-                                generateAppRun,
-                                generateDesktopEntry
-                            )
-                            templateAppDir.set(targetTemplateAppDir)
-                            // TODO: this should get the files from the roast dir instead
-                            jpackageImageBuildDir.set(targetRuntimeImageBuildDir)
-                            outputDir.set(linuxAppDir)
-                            icon.set(pluginExtension.linuxIcon)
-                        }
-
-                        val prepareAppImageToolsTask = prepareAppImageTools.get()
-                        val buildAppImage = tasks.register("buildAppImage$capitalized", BuildAppImage::class.java) {
-                            dependsOn(
-                                prepareAppImageToolsTask,
-                                prepareAppImageFiles
-                            )
-                            imagesToolsDir.set(imageToolsDir)
-                            imageDir.set(linuxAppDir)
-                            appImageFile.set(linuxAppImage)
-                            architecture.set(target.architecture)
-                        }
-
-                        buildAppImages.get().dependsOn(buildAppImage)
-
-                        val packageLinux = tasks.register("package$capitalized", Zip::class.java) {
+                    is Target.Linux, is Target.Windows -> {
+                        tasks.register("package$capitalized", Zip::class.java) {
                             group = GROUP_NAME
-                            dependsOn(buildAppImage)
+                            dependsOn(packageRoast)
                             archiveFileName.set(targetArchiveFileName)
                             destinationDirectory.set(pluginExtension.outputDir)
-                            from(linuxAppImage)
+                            from(targetRoastDir)
                             into(packageDestination)
                         }
-
-                        packageLinuxMain.get().dependsOn(packageLinux)
                     }
 
                     is Target.MacOs -> {
@@ -270,25 +173,12 @@ class ConstruoPlugin : Plugin<Project> {
 
                         buildMacAppBundles.get().dependsOn(buildMacAppBundle)
 
-                        val packageMac = tasks.register("package$capitalized", Zip::class.java) {
+                        tasks.register("package$capitalized", Zip::class.java) {
                             group = GROUP_NAME
                             archiveFileName.set(targetArchiveFileName)
                             destinationDirectory.set(pluginExtension.outputDir)
                             dependsOn(buildMacAppBundle)
                             from(macAppDir)
-                            into(packageDestination)
-                        }
-
-                        packageMacMain.get().dependsOn(packageMac)
-                    }
-
-                    is Target.Windows -> {
-                        tasks.register("package$capitalized", Zip::class.java) {
-                            group = GROUP_NAME
-                            archiveFileName.set(targetArchiveFileName)
-                            destinationDirectory.set(pluginExtension.outputDir)
-                            dependsOn(packageRoast)
-                            from(targetRoastDir)
                             into(packageDestination)
                         }
                     }
@@ -307,7 +197,5 @@ class ConstruoPlugin : Plugin<Project> {
 
     companion object {
         const val GROUP_NAME = "construo"
-        const val APP_DIR_NAME = "Game.AppDir"
-        const val APP_IMAGE_NAME = "Game"
     }
 }

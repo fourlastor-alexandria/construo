@@ -21,7 +21,8 @@ abstract class GenerateAppRun : BaseTask() {
                 HERE=${'$'}{SELF%/*}
                 export PATH="${'$'}HERE/bin:${'$'}PATH"
                 export ALSOFT_DRIVERS=pulse
-                exec "${executable.get()}" "${'$'}@"
+                pwd
+                cd bin && "./${executable.get()}" "${'$'}@"
         """.trimIndent()
         val file = outputFile.get().asFile
         file.writeText(

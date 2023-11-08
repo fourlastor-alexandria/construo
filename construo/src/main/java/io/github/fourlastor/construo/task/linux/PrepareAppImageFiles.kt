@@ -4,6 +4,8 @@ import io.github.fourlastor.construo.task.BaseTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputDirectory
@@ -14,7 +16,9 @@ abstract class PrepareAppImageFiles @Inject constructor(
     private val fileSystemOperations: FileSystemOperations
 ) : BaseTask() {
 
-    @get:InputDirectory abstract val jpackageImageBuildDir: DirectoryProperty
+    @get:Input abstract val binaryName: Property<String>
+
+    @get:InputDirectory abstract val packagedAppDir: DirectoryProperty
 
     @get:InputDirectory abstract val templateAppDir: DirectoryProperty
 
@@ -25,8 +29,8 @@ abstract class PrepareAppImageFiles @Inject constructor(
     @TaskAction
     fun run() {
         fileSystemOperations.copy {
-            from(jpackageImageBuildDir) {
-                exclude("legal")
+            from(packagedAppDir) {
+                rename(binaryName.get(), "AppRun")
             }
             from(templateAppDir)
             if (icon.isPresent) {
