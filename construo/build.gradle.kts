@@ -50,7 +50,6 @@ dependencies {
 val libVersion: String by project
 val publishGroup = "io.github.fourlastor.gdx"
 
-
 group = publishGroup
 version = libVersion
 
