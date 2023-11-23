@@ -6,7 +6,6 @@ import io.github.fourlastor.construo.task.jvm.CreateRuntimeImageTask
 import io.github.fourlastor.construo.task.jvm.RoastTask
 import io.github.fourlastor.construo.task.macos.BuildMacAppBundle
 import io.github.fourlastor.construo.task.macos.GeneratePlist
-import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.file.Directory
@@ -36,154 +35,155 @@ class ConstruoPlugin : Plugin<Project> {
         }
 
         // Register the correct tasks for each target
-        pluginExtension.targets.all(
-            Action {
-                val target = this
-                val targetBuildDir = baseBuildDir.map { it.dir(target.name) }
-                val targetRuntimeImageBuildDir = baseRuntimeImageBuildDir.map { it.dir("${project.name}-${target.name}") }
+        pluginExtension.targets.all {
+            val target = this
+            val targetBuildDir = baseBuildDir.map { it.dir(target.name) }
+            val targetRuntimeImageBuildDir = baseRuntimeImageBuildDir.map { it.dir("${project.name}-${target.name}") }
 
-                val capitalized = target.name.capitalized()
-                val targetArchiveFileName = pluginExtension.name.map { "$it-${target.name}.zip" }
-                val packageDestination = pluginExtension.name.flatMap { name ->
-                    pluginExtension.version.map { version -> "$name-$version-${target.name}" }
-                }
+            val capitalized = target.name.capitalized()
+            val targetArchiveFileName = pluginExtension.name.map { "$it-${target.name}.zip" }
+            val packageDestination = pluginExtension.name.flatMap { name ->
+                pluginExtension.version.map { version -> "$name-$version-${target.name}" }
+            }
 
-                val downloadJdk = tasks.register("downloadJdk$capitalized", Download::class.java) {
-                    group = GROUP_NAME
-                    src(listOf(target.jdkUrl))
-                    dest(
-                        target.jdkUrl.flatMap { url ->
-                            val extension = if (url.endsWith(".zip")) "zip" else "tar.gz"
-                            jdkDir.map { it.file("${target.name}.$extension") }
+            val downloadJdk = tasks.register("downloadJdk$capitalized", Download::class.java) {
+                group = GROUP_NAME
+                src(listOf(target.jdkUrl))
+                dest(
+                    target.jdkUrl.flatMap { url ->
+                        val extension = if (url.endsWith(".zip")) "zip" else "tar.gz"
+                        jdkDir.map { it.file("${target.name}.$extension") }
+                    }
+                )
+                overwrite(false)
+            }
+            val targetJdkDir = jdkDir.map { it.dir(target.name) }
+            val unzipJdk = tasks.register("unzipJdk$capitalized", Copy::class.java) {
+                group = GROUP_NAME
+                dependsOn(downloadJdk)
+                from(
+                    downloadJdk.map {
+                        if (it.dest.extension == "zip") {
+                            project.zipTree(it.dest)
+                        } else {
+                            project.tarTree(it.dest)
                         }
-                    )
-                    overwrite(false)
+                    }
+                ) {
+                    exclude("**/legal/**")
                 }
-                val targetJdkDir = jdkDir.map { it.dir(target.name) }
-                val unzipJdk = tasks.register("unzipJdk$capitalized", Copy::class.java) {
-                    group = GROUP_NAME
-                    dependsOn(downloadJdk)
-                    from(
-                        downloadJdk.map {
-                            if (it.dest.extension == "zip") {
-                                project.zipTree(it.dest)
-                            } else {
-                                project.tarTree(it.dest)
-                            }
-                        }
-                    ) {
-                        exclude("**/legal/**")
-                    }
-                    into(targetJdkDir)
-                    doFirst {
-                        targetJdkDir.get().asFile.deleteRecursively()
-                    }
+                into(targetJdkDir)
+                doFirst {
+                    targetJdkDir.get().asFile.deleteRecursively()
                 }
-                val targetRoastDir = targetBuildDir.map { it.dir("roast") }
+            }
+            val targetRoastDir = targetBuildDir.map { it.dir("roast") }
 
-                val runningJdkRoot = File(System.getProperty("java.home"))
-                val jdkTargetRoot = project.layout.dir(unzipJdk.map { it.destinationDir }).findJdkRoot()
-                val jarTask = tasks.named("shadowJar", Jar::class.java).orElse(tasks.named("jar", Jar::class.java))
-                val jarFileLocation = jarTask.flatMap { it.archiveFile }
+            val runningJdkRoot = File(System.getProperty("java.home"))
+            val jdkTargetRoot = project.layout.dir(unzipJdk.map { it.destinationDir }).findJdkRoot()
+            val jarTask = (tasks.findByName("shadowJar") ?: tasks.findByName("jar")) as Jar
+            val jarFileLocation = jarTask.archiveFile
 
-                val createRuntimeImage =
-                    tasks.register("createRuntimeImage$capitalized", CreateRuntimeImageTask::class.java) {
-                        dependsOn(unzipJdk, jarTask)
-                        jdkRoot.set(runningJdkRoot)
-                        jarFile.set(jarFileLocation)
-                        targetJdkRoot.set(jdkTargetRoot)
-                        output.set(targetRuntimeImageBuildDir)
-                    }
-
-                fun Target.roastName(): String = when (this) {
-                    is Target.Windows -> {
-                        check(architecture.get() == Architecture.X86_64) { "Only Windows 64 bit is supported" }
-                        "win-64.exe"
-                    }
-                    is Target.Linux -> when (architecture.get()) {
-                        Architecture.X86_64 -> "linux-x86_64"
-                        Architecture.AARCH64 -> "linux-aarch64"
-                    }
-                    is Target.MacOs -> when (architecture.get()) {
-                        Architecture.X86_64 -> "macos-x86_64"
-                        Architecture.AARCH64 -> "macos-aarch64"
-                    }
-                    else -> error("Unsupported target.")
-                }
-
-                val downloadRoast = tasks.register("downloadRoast$capitalized", Download::class.java) {
-                    group = GROUP_NAME
-                    src("https://github.com/fourlastor-alexandria/roast/releases/download/v0.0.2/roast-${target.roastName()}.zip")
-                    dest(roastZipDir)
-                    overwrite(false)
-                }
-                val targetRoastExeDir = baseRoastExeDir.map { it.dir(target.name) }
-                val unzipRoast = tasks.register("unzipRoast$capitalized", Copy::class.java) {
-                    dependsOn(downloadRoast)
-                    from(project.zipTree(roastZipDir.map { it.file("roast-${target.roastName()}.zip") }))
-                    into(targetRoastExeDir)
-                }
-
-                val packageRoast = tasks.register("roast$capitalized", RoastTask::class.java) {
-                    dependsOn(unzipRoast)
-                    targetProperty.set(target)
-                    jdkRoot.set(createRuntimeImage.flatMap { it.output })
-                    appName.set(pluginExtension.name)
-                    mainClassName.set(pluginExtension.mainClassName)
+            val createRuntimeImage =
+                tasks.register("createRuntimeImage$capitalized", CreateRuntimeImageTask::class.java) {
+                    dependsOn(unzipJdk, jarTask)
+                    jdkRoot.set(runningJdkRoot)
                     jarFile.set(jarFileLocation)
-                    output.set(targetRoastDir)
-                    roastExe.set(targetRoastExeDir.map { it.file("roast-${target.roastName()}") })
+                    targetJdkRoot.set(jdkTargetRoot)
+                    output.set(targetRuntimeImageBuildDir)
                 }
 
-                when (target) {
-                    is Target.Linux, is Target.Windows -> {
-                        tasks.register("package$capitalized", Zip::class.java) {
-                            group = GROUP_NAME
-                            dependsOn(packageRoast)
-                            archiveFileName.set(targetArchiveFileName)
-                            destinationDirectory.set(pluginExtension.outputDir)
-                            from(targetRoastDir)
-                            into(packageDestination)
-                        }
+            fun Target.roastName(): String = when (this) {
+                is Target.Windows -> {
+                    check(architecture.get() == Architecture.X86_64) { "Only Windows 64 bit is supported" }
+                    "win-64.exe"
+                }
+
+                is Target.Linux -> when (architecture.get()) {
+                    Architecture.X86_64 -> "linux-x86_64"
+                    Architecture.AARCH64 -> "linux-aarch64"
+                }
+
+                is Target.MacOs -> when (architecture.get()) {
+                    Architecture.X86_64 -> "macos-x86_64"
+                    Architecture.AARCH64 -> "macos-aarch64"
+                }
+
+                else -> error("Unsupported target.")
+            }
+
+            val downloadRoast = tasks.register("downloadRoast$capitalized", Download::class.java) {
+                group = GROUP_NAME
+                src("https://github.com/fourlastor-alexandria/roast/releases/download/v0.0.2/roast-${target.roastName()}.zip")
+                dest(roastZipDir)
+                overwrite(false)
+            }
+            val targetRoastExeDir = baseRoastExeDir.map { it.dir(target.name) }
+            val unzipRoast = tasks.register("unzipRoast$capitalized", Copy::class.java) {
+                dependsOn(downloadRoast)
+                from(project.zipTree(roastZipDir.map { it.file("roast-${target.roastName()}.zip") }))
+                into(targetRoastExeDir)
+            }
+
+            val packageRoast = tasks.register("roast$capitalized", RoastTask::class.java) {
+                dependsOn(unzipRoast)
+                targetProperty.set(target)
+                jdkRoot.set(createRuntimeImage.flatMap { it.output })
+                appName.set(pluginExtension.name)
+                mainClassName.set(pluginExtension.mainClassName)
+                jarFile.set(jarFileLocation)
+                output.set(targetRoastDir)
+                roastExe.set(targetRoastExeDir.map { it.file("roast-${target.roastName()}") })
+            }
+
+            when (target) {
+                is Target.Linux, is Target.Windows -> {
+                    tasks.register("package$capitalized", Zip::class.java) {
+                        group = GROUP_NAME
+                        dependsOn(packageRoast)
+                        archiveFileName.set(targetArchiveFileName)
+                        destinationDirectory.set(pluginExtension.outputDir)
+                        from(targetRoastDir)
+                        into(packageDestination)
+                    }
+                }
+
+                is Target.MacOs -> {
+                    val macAppDir = targetBuildDir.flatMap { dir ->
+                        pluginExtension.name.map { dir.dir("$it.app") }
+                    }
+                    val pListFile = targetBuildDir.map { it.file("Info.plist") }
+                    val generatePlist = tasks.register("generatePList$capitalized", GeneratePlist::class.java) {
+                        humanName.set(pluginExtension.humanName)
+                        info.set(pluginExtension.info)
+                        executable.set(pluginExtension.name)
+                        identifier.set(pluginExtension.identifier)
+                        icon.set(pluginExtension.macIcon)
+                        outputFile.set(pListFile)
                     }
 
-                    is Target.MacOs -> {
-                        val macAppDir = targetBuildDir.flatMap { dir ->
-                            pluginExtension.name.map { dir.dir("$it.app") }
-                        }
-                        val pListFile = targetBuildDir.map { it.file("Info.plist") }
-                        val generatePlist = tasks.register("generatePList$capitalized", GeneratePlist::class.java) {
-                            humanName.set(pluginExtension.humanName)
-                            info.set(pluginExtension.info)
-                            executable.set(pluginExtension.name)
-                            identifier.set(pluginExtension.identifier)
+                    val buildMacAppBundle =
+                        tasks.register("buildMacAppBundle$capitalized", BuildMacAppBundle::class.java) {
+                            dependsOn(packageRoast, generatePlist)
+                            packagedAppDir.set(targetRoastDir)
+                            outputDirectory.set(macAppDir)
                             icon.set(pluginExtension.macIcon)
-                            outputFile.set(pListFile)
+                            plist.set(pListFile)
                         }
 
-                        val buildMacAppBundle =
-                            tasks.register("buildMacAppBundle$capitalized", BuildMacAppBundle::class.java) {
-                                dependsOn(packageRoast, generatePlist)
-                                packagedAppDir.set(targetRoastDir)
-                                outputDirectory.set(macAppDir)
-                                icon.set(pluginExtension.macIcon)
-                                plist.set(pListFile)
-                            }
+                    buildMacAppBundles.get().dependsOn(buildMacAppBundle)
 
-                        buildMacAppBundles.get().dependsOn(buildMacAppBundle)
-
-                        tasks.register("package$capitalized", Zip::class.java) {
-                            group = GROUP_NAME
-                            archiveFileName.set(targetArchiveFileName)
-                            destinationDirectory.set(pluginExtension.outputDir)
-                            dependsOn(buildMacAppBundle)
-                            from(macAppDir)
-                            into(packageDestination)
-                        }
+                    tasks.register("package$capitalized", Zip::class.java) {
+                        group = GROUP_NAME
+                        archiveFileName.set(targetArchiveFileName)
+                        destinationDirectory.set(pluginExtension.outputDir)
+                        dependsOn(buildMacAppBundle)
+                        from(macAppDir)
+                        into(packageDestination)
                     }
                 }
             }
-        )
+        }
     }
 
     private fun Provider<Directory>.findJdkRoot() = this.map { root ->
