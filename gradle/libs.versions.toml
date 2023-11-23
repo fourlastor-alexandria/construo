@@ -21,3 +21,4 @@ spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexus-publish"}
 jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "jetbrains-kotlin" }
 jetbrains-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "jetbrains-kotlin" }
+shadow = { id = "com.github.johnrengelman.shadow", version.ref = "shadow" }

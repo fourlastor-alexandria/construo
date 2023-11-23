@@ -11,6 +11,7 @@ buildscript {
 plugins {
     java
     application
+    alias(libs.plugins.shadow)
     alias(libs.plugins.spotless)
     id("io.github.fourlastor.gdx.construo")
 }
