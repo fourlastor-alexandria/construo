@@ -37,6 +37,7 @@ gradlePlugin {
 dependencies {
     implementation(libs.download)
     implementation(libs.xmlBuilder)
+    implementation(libs.shadow)
     implementation(libs.kotlinx.serialization)
 }
 
