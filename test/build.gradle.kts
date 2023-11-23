@@ -37,12 +37,16 @@ tasks.test {
 
 application {
     applicationName = "game"
-    mainClass.set("io.github.fourlastor.gdx.Main")
+    mainClass.set("io.github.fourlastor.gdx.Lwjgl3Launcher")
+}
+
+sourceSets.main.configure {
+    resources.srcDir(project.file("assets"))
 }
 
 tasks.withType<Jar> {
     manifest {
-        attributes["Main-Class"] = "io.github.fourlastor.gdx.Main"
+        attributes["Main-Class"] = "io.github.fourlastor.gdx.Lwjgl3Launcher"
     }
 }
 
@@ -52,7 +56,7 @@ construo {
     version.set("0.0.0")
     linuxIcon.set(rootProject.file("icon.png"))
     outputDir.set(rootProject.file("dist"))
-    mainClassName.set("io.github.fourlastor.gdx.Main")
+    mainClassName.set("io.github.fourlastor.gdx.Lwjgl3Launcher")
     targets {
         create<Target.Linux>("linuxX64") {
             architecture.set(Architecture.X86_64)
