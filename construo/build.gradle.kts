@@ -1,7 +1,3 @@
-@Suppress(
-    // known false positive: https://youtrack.jetbrains.com/issue/KTIJ-19369
-    "DSL_SCOPE_VIOLATION"
-)
 plugins {
     `kotlin-dsl`
     `maven-publish`
@@ -11,9 +7,6 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.jvm)
     alias(libs.plugins.jetbrains.kotlin.serialization)
 }
-
-java.sourceCompatibility = JavaVersion.VERSION_1_8
-java.targetCompatibility = JavaVersion.VERSION_1_8
 
 repositories {
     mavenCentral()

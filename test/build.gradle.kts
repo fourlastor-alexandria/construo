@@ -8,10 +8,6 @@ buildscript {
     }
 }
 
-@Suppress(
-    // known false positive: https://youtrack.jetbrains.com/issue/KTIJ-19369
-    "DSL_SCOPE_VIOLATION"
-)
 plugins {
     java
     application
