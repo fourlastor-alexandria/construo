@@ -83,8 +83,8 @@ class ConstruoPlugin : Plugin<Project> {
 
                 val runningJdkRoot = File(System.getProperty("java.home"))
                 val jdkTargetRoot = project.layout.dir(unzipJdk.map { it.destinationDir }).findJdkRoot()
-                val jarTask = tasks.named("shadowJar", Jar::class.java).orElse(tasks.named("jar", Jar::class.java))
-                val jarFileLocation = jarTask.flatMap { it.archiveFile }
+                val jarTask = (tasks.findByName("shadowJar") ?: tasks.findByName("jar")) as Jar
+                val jarFileLocation = jarTask.archiveFile
 
                 val createRuntimeImage =
                     tasks.register("createRuntimeImage$capitalized", CreateRuntimeImageTask::class.java) {
