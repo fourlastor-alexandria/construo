@@ -59,6 +59,7 @@ abstract class CreateRuntimeImageTask @Inject constructor(
             commandLine(
                 File(javaHome, executableForOs("bin/jlink")).absolutePath,
                 "--no-header-files",
+                "--strip-native-commands",
                 "--no-man-pages",
                 "--compress=2",
                 "--strip-debug",
