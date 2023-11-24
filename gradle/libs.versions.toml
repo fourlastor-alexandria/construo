@@ -1,0 +1,23 @@
+[versions]
+download = "5.4.0"
+gdx = "1.11.0"
+jetbrains-kotlin = "1.7.10"
+kotlinx-serialization = "1.4.0"
+nexus-publish = "1.3.0"
+packr = "3.0.3"
+shadow = "8.1.1"
+spotless = "6.10.0"
+xmlBuilder = "1.9.0"
+[libraries]
+download = { module = "de.undercouch:gradle-download-task", version.ref = "download" }
+gdx-core = { module = "com.badlogicgames.gdx:gdx", version.ref = "gdx" }
+gdx-platform = { module = "com.badlogicgames.gdx:gdx-platform", version.ref = "gdx" }
+gdx-backend-lwjgl3 = { module = "com.badlogicgames.gdx:gdx-backend-lwjgl3", version.ref = "gdx" }
+kotlinx-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization"}
+shadow = { module = "com.github.johnrengelman:shadow", version.ref = "shadow" }
+xmlBuilder = { module = "org.redundent:kotlin-xml-builder", version.ref = "xmlBuilder" }
+[plugins]
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexus-publish"}
+jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "jetbrains-kotlin" }
+jetbrains-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "jetbrains-kotlin" }

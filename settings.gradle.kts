@@ -1,7 +1,9 @@
-@file:Suppress("UnstableApiUsage")
-
-include(":construo")
-
 dependencyResolutionManagement {
-    versionCatalogs { create("libs") { from(files("libs.versions.toml")) } }
+    versionCatalogs { create("libs") }
 }
+
+pluginManagement {
+    includeBuild("./construo")
+}
+
+include(":test")
