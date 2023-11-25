@@ -25,6 +25,10 @@ java {
     withSourcesJar()
 }
 
+base {
+    archivesName = "construo"
+}
+
 gradlePlugin {
     plugins {
         register("construo") {
@@ -56,9 +60,8 @@ nexusPublishing {
 
 publishing {
     publications {
-        create<MavenPublication>("mavenJava") {
-            artifactId = "construo"
-            from(components["java"])
+        named<MavenPublication>("pluginMaven") {
+            artifactId = base.archivesName.get()
             pom {
                 name.set("Construo")
                 description.set("A plugin to cross compile JVM applications")
@@ -90,5 +93,5 @@ signing {
     val signingKey: String? by project
     val signingPassword: String? by project
     useInMemoryPgpKeys(signingKey, signingPassword)
-    sign(publishing.publications["mavenJava"])
+    sign(publishing.publications["pluginMaven"])
 }
