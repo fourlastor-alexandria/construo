@@ -17,8 +17,6 @@ abstract class ConstruoPluginExtension @Inject constructor(
     abstract val identifier: Property<String>
     abstract val version: Property<String>
     abstract val outputDir: DirectoryProperty
-    abstract val winIcon: RegularFileProperty
-    abstract val linuxIcon: RegularFileProperty
     abstract val macIcon: RegularFileProperty
     val targets: ExtensiblePolymorphicDomainObjectContainer<Target> = objectFactory.polymorphicDomainObjectContainer(Target::class.java)
     init {

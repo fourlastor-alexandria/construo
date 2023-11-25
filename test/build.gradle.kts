@@ -49,7 +49,6 @@ construo {
     name.set("game")
     humanName.set("Game")
     version.set("0.0.0")
-    linuxIcon.set(rootProject.file("icon.png"))
     outputDir.set(rootProject.file("dist"))
     targets {
         create<Target.Linux>("linuxX64") {
