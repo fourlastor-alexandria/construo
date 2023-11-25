@@ -55,10 +55,6 @@ construo {
             architecture.set(Architecture.X86_64)
             jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_x64_linux_hotspot_17.0.8_7.tar.gz")
         }
-//        create<Target.Linux>("linuxAarch64") {
-//            architecture.set(Architecture.AARCH64)
-//            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_aarch64_linux_hotspot_17.0.8_7.tar.gz")
-//        }
         create<Target.MacOs>("macX64") {
             architecture.set(Architecture.X86_64)
             identifier.set("io.github.fourlastor.Game")
