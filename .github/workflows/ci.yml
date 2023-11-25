@@ -23,7 +23,7 @@ jobs:
         run: ./gradlew assemble
         working-directory: ./construo
       - name: Build test project
-        run: ./gradlew test:roastLinuxX64 test:roastMacM1 test:roastMacX64 test:roastWinX64
+        run: ./gradlew test:packageLinuxX64 test:packageMacM1 test:packageMacX64 test:packageWinX64
   check-format:
     runs-on: ubuntu-latest
     steps:
