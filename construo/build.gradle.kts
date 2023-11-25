@@ -61,12 +61,12 @@ publishing {
             from(components["java"])
             pom {
                 name.set("Construo")
-                description.set("A plugin to cross compile libGDX games")
-                url.set("https://www.github.com/fourlastor-alexandria/construo-gdx")
+                description.set("A plugin to cross compile JVM applications")
+                url.set("https://www.github.com/fourlastor-alexandria/construo")
                 licenses {
                     license {
                         name.set("MIT License")
-                        url.set("https://www.github.com/fourlastor-alexandria/construo-gdx/blob/main/LICENSE")
+                        url.set("https://www.github.com/fourlastor-alexandria/construo/blob/main/LICENSE")
                     }
                 }
                 developers {
@@ -76,9 +76,9 @@ publishing {
                     }
                 }
                 scm {
-                    connection.set("scm:git:https://www.github.com/fourlastor-alexandria/construo-gdx.git")
-                    developerConnection.set("scm:git:https://www.github.com/fourlastor-alexandria/construo-gdx.git")
-                    url.set("https://www.github.com/fourlastor-alexandria/construo-gdx")
+                    connection.set("scm:git:https://www.github.com/fourlastor-alexandria/construo.git")
+                    developerConnection.set("scm:git:https://www.github.com/fourlastor-alexandria/construo.git")
+                    url.set("https://www.github.com/fourlastor-alexandria/construo")
                 }
             }
         }
