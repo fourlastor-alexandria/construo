@@ -72,7 +72,7 @@ class ConstruoPlugin : Plugin<Project> {
             }
             val targetRoastDir = targetBuildDir.map { it.dir("roast") }
 
-            val runningJdkRoot = File(System.getProperty("java.home"))
+            val runningJdkRoot = pluginExtension.jdkRoot.orElse(project.layout.dir(project.provider { File(System.getProperty("java.home")) }))
             val jdkTargetRoot = project.layout.dir(unzipJdk.map { it.destinationDir }).findJdkRoot()
             val jarTask = (tasks.findByName("shadowJar") ?: tasks.findByName("jar")) as Jar
             val mainClass = jarTask.manifest.attributes["Main-Class"] as String
