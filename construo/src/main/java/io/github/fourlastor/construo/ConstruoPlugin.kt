@@ -82,6 +82,7 @@ class ConstruoPlugin : Plugin<Project> {
             val runningJdkRoot = File(System.getProperty("java.home"))
             val jdkTargetRoot = project.layout.dir(unzipJdk.map { it.destinationDir }).findJdkRoot()
             val jarTask = (tasks.findByName("shadowJar") ?: tasks.findByName("jar")) as Jar
+            val mainClass = jarTask.manifest.attributes["Main-Class"] as String
             val jarFileLocation = jarTask.archiveFile
 
             val createRuntimeImage =
@@ -130,7 +131,7 @@ class ConstruoPlugin : Plugin<Project> {
                 targetProperty.set(target)
                 jdkRoot.set(createRuntimeImage.flatMap { it.output })
                 appName.set(pluginExtension.name)
-                mainClassName.set(pluginExtension.mainClassName)
+                mainClassName.set(mainClass)
                 jarFile.set(jarFileLocation)
                 output.set(targetRoastDir)
                 roastExe.set(targetRoastExeDir.map { it.file("roast-${target.roastName()}") })

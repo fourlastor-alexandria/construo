@@ -51,7 +51,6 @@ construo {
     version.set("0.0.0")
     linuxIcon.set(rootProject.file("icon.png"))
     outputDir.set(rootProject.file("dist"))
-    mainClassName.set("io.github.fourlastor.gdx.Main")
     targets {
         create<Target.Linux>("linuxX64") {
             architecture.set(Architecture.X86_64)
