@@ -144,7 +144,7 @@ class ConstruoPlugin : Plugin<Project> {
 
                 is Target.MacOs -> {
                     val macAppDir = targetBuildDir.flatMap { dir ->
-                        pluginExtension.name.map { dir.dir("$it.app") }
+                        pluginExtension.humanName.map { dir.dir("$it.app") }
                     }
                     val pListFile = targetBuildDir.map { it.file("Info.plist") }
                     val generatePlist = tasks.register("generatePList$capitalized", GeneratePlist::class.java) {
@@ -171,7 +171,7 @@ class ConstruoPlugin : Plugin<Project> {
                         destinationDirectory.set(pluginExtension.outputDir)
                         dependsOn(buildMacAppBundle)
                         from(macAppDir)
-                        into(packageDestination)
+                        into(packageDestination.flatMap { destination -> pluginExtension.humanName.map { "${destination}/$it.app" } })
                     }
                 }
             }
