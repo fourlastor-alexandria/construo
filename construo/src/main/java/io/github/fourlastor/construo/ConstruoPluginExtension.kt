@@ -33,9 +33,8 @@ interface Target : Named {
     interface Linux : Target
     interface MacOs : Target
     interface Windows : Target
-}
-
-enum class Architecture(val arch: String) {
-    X86_64("x64"),
-    AARCH64("aarch64"),
+    enum class Architecture(val arch: String) {
+        X86_64("x64"),
+        AARCH64("aarch64"),
+    }
 }
