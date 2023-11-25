@@ -1,2 +1,3 @@
-# construo-gdx
-A plugin to cross compile libgdx games
+# construo
+
+Construo is a gradle plugin to cross compile JVM apps.
