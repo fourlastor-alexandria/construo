@@ -27,13 +27,6 @@ class ConstruoPlugin : Plugin<Project> {
         val baseRoastExeDir = baseBuildDir.map { it.dir("roast-exe") }
         val jdkDir = baseBuildDir.map { it.dir("jdk") }
 
-        // Generic tasks, these are lazy because they need to be instantiated only if a specific platform is used.
-        val buildMacAppBundles by lazy {
-            tasks.register("buildMacAppBundle") {
-                group = GROUP_NAME
-            }
-        }
-
         // Register the correct tasks for each target
         pluginExtension.targets.all {
             val target = this
@@ -171,8 +164,6 @@ class ConstruoPlugin : Plugin<Project> {
                             icon.set(pluginExtension.macIcon)
                             plist.set(pListFile)
                         }
-
-                    buildMacAppBundles.get().dependsOn(buildMacAppBundle)
 
                     tasks.register("package$capitalized", Zip::class.java) {
                         group = GROUP_NAME
