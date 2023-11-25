@@ -1,6 +1,6 @@
 package io.github.fourlastor.construo.task.linux
 
-import io.github.fourlastor.construo.Architecture
+import io.github.fourlastor.construo.Target
 import io.github.fourlastor.construo.task.BaseTask
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
@@ -17,7 +17,7 @@ abstract class GenerateDesktopEntry : BaseTask() {
 
     @get:Input abstract val version: Property<String>
 
-    @get:Input abstract val architecture: Property<Architecture>
+    @get:Input abstract val architecture: Property<Target.Architecture>
 
     @get:OutputFile abstract val outputFile: RegularFileProperty
 

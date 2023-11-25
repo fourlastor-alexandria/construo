@@ -89,18 +89,18 @@ class ConstruoPlugin : Plugin<Project> {
 
             fun Target.roastName(): String = when (this) {
                 is Target.Windows -> {
-                    check(architecture.get() == Architecture.X86_64) { "Only Windows 64 bit is supported" }
+                    check(architecture.get() == Target.Architecture.X86_64) { "Only Windows 64 bit is supported" }
                     "win-64.exe"
                 }
 
                 is Target.Linux -> when (architecture.get()) {
-                    Architecture.X86_64 -> "linux-x86_64"
-                    Architecture.AARCH64 -> "linux-aarch64"
+                    Target.Architecture.X86_64 -> "linux-x86_64"
+                    Target.Architecture.AARCH64 -> "linux-aarch64"
                 }
 
                 is Target.MacOs -> when (architecture.get()) {
-                    Architecture.X86_64 -> "macos-x86_64"
-                    Architecture.AARCH64 -> "macos-aarch64"
+                    Target.Architecture.X86_64 -> "macos-x86_64"
+                    Target.Architecture.AARCH64 -> "macos-aarch64"
                 }
 
                 else -> error("Unsupported target.")
