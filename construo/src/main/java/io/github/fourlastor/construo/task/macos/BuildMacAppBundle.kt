@@ -29,7 +29,6 @@ abstract class BuildMacAppBundle @Inject constructor(
         fileSystemOperations.delete { delete(outputDirectory) }
         fileSystemOperations.copy {
             from(packagedAppDir) {
-                exclude("legal")
                 into("MacOS")
             }
             from(plist)
