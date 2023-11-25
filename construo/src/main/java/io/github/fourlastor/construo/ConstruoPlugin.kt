@@ -171,7 +171,7 @@ class ConstruoPlugin : Plugin<Project> {
                         destinationDirectory.set(pluginExtension.outputDir)
                         dependsOn(buildMacAppBundle)
                         from(macAppDir)
-                        into(packageDestination.flatMap { destination -> pluginExtension.humanName.map { "${destination}/$it.app" } })
+                        into(packageDestination.flatMap { destination -> pluginExtension.humanName.map { "$destination/$it.app" } })
                     }
                 }
             }
