@@ -39,7 +39,7 @@ gradlePlugin {
     vcsUrl.set("https://www.github.com/fourlastor-alexandria/construo")
     plugins {
         register("construo") {
-            id = "io.github.fourlastor.gdx.construo"
+            id = "io.github.fourlastor.construo"
             implementationClass = "io.github.fourlastor.construo.ConstruoPlugin"
             displayName = "Construo"
             description = "A plugin to package JVM applications across systems"
