@@ -1,8 +1,7 @@
 plugins {
     `kotlin-dsl`
     `maven-publish`
-    signing
-    alias(libs.plugins.nexus.publish)
+    alias(libs.plugins.plugin.publish)
     alias(libs.plugins.spotless)
     alias(libs.plugins.jetbrains.kotlin.jvm)
     alias(libs.plugins.jetbrains.kotlin.serialization)
@@ -29,11 +28,22 @@ base {
     archivesName = "construo"
 }
 
+val libVersion: String by project
+val publishGroup = "io.github.fourlastor"
+
+group = publishGroup
+version = libVersion
+
 gradlePlugin {
+    website.set("https://www.github.com/fourlastor-alexandria/construo")
+    vcsUrl.set("https://www.github.com/fourlastor-alexandria/construo")
     plugins {
         register("construo") {
-            id = "io.github.fourlastor.gdx.construo"
+            id = "io.github.fourlastor.construo"
             implementationClass = "io.github.fourlastor.construo.ConstruoPlugin"
+            displayName = "Construo"
+            description = "A plugin to package JVM applications across systems"
+            tags = listOf("jlink", "runtime", "package")
         }
     }
 }
@@ -43,59 +53,4 @@ dependencies {
     implementation(libs.xmlBuilder)
     implementation(libs.shadow)
     implementation(libs.kotlinx.serialization)
-}
-
-val libVersion: String by project
-val publishGroup = "io.github.fourlastor.gdx"
-
-group = publishGroup
-version = libVersion
-
-nexusPublishing {
-    repositories {
-        sonatype()
-    }
-}
-
-
-publishing {
-    publications {
-        afterEvaluate {
-            named<MavenPublication>("pluginMaven") {
-                artifactId = base.archivesName.get()
-                pom {
-                    name.set("Construo")
-                    description.set("A plugin to cross compile JVM applications")
-                    url.set("https://www.github.com/fourlastor-alexandria/construo")
-                    licenses {
-                        license {
-                            name.set("MIT License")
-                            url.set("https://www.github.com/fourlastor-alexandria/construo/blob/main/LICENSE")
-                        }
-                    }
-                    developers {
-                        developer {
-                            id.set("fourlastor")
-                            name.set("Daniele Conti")
-                        }
-                    }
-                    scm {
-                        connection.set("scm:git:https://www.github.com/fourlastor-alexandria/construo.git")
-                        developerConnection.set("scm:git:https://www.github.com/fourlastor-alexandria/construo.git")
-                        url.set("https://www.github.com/fourlastor-alexandria/construo")
-                    }
-                }
-            }
-        }
-    }
-}
-
-signing {
-    afterEvaluate {
-        setRequired({ project.hasProperty("RELEASE") })
-        val signingKey: String? by project
-        val signingPassword: String? by project
-        useInMemoryPgpKeys(signingKey, signingPassword)
-        sign(publishing.publications["pluginMaven"])
-    }
 }
