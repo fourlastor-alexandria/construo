@@ -11,10 +11,10 @@ plugins {
     java
     application
     alias(libs.plugins.spotless)
-    id("io.github.fourlastor.gdx.construo")
+    id("io.github.fourlastor.construo")
 }
 
-group = "io.github.fourlastor.gdx"
+group = "io.github.fourlastor"
 version = "1.0.0"
 
 
