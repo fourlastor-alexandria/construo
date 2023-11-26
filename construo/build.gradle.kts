@@ -1,7 +1,6 @@
 plugins {
     `kotlin-dsl`
     `maven-publish`
-    signing
     alias(libs.plugins.plugin.publish)
     alias(libs.plugins.spotless)
     alias(libs.plugins.jetbrains.kotlin.jvm)
@@ -44,6 +43,7 @@ gradlePlugin {
             implementationClass = "io.github.fourlastor.construo.ConstruoPlugin"
             displayName = "Construo"
             description = "A plugin to package JVM applications across systems"
+            tags = listOf("jlink", "runtime", "package")
         }
     }
 }
