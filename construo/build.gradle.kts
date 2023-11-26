@@ -29,7 +29,7 @@ base {
 }
 
 val libVersion: String by project
-val publishGroup = "io.github.fourlastor.gdx"
+val publishGroup = "io.github.fourlastor"
 
 group = publishGroup
 version = libVersion
