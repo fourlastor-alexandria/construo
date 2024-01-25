@@ -1,5 +1,7 @@
 # construo
 
+[![Download](https://img.shields.io/gradle-plugin-portal/v/io.github.fourlastor.construo)](https://plugins.gradle.org/plugin/io.github.fourlastor.construo)
+
 Construo is a gradle plugin to cross compile JVM apps.
 
 ## Setup
