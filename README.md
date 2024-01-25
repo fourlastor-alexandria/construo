@@ -31,16 +31,10 @@ Kotlin DSL:
 ```kotlin
 import io.github.fourlastor.construo.Target
 
-tasks.withType<Jar> {
-    manifest {
-        attributes["Main-Class"] = "io.github.fourlastor.gdx.Main"
-    }
-}
-
 construo {
     // name of the executable
     name.set("game")
-    // human readable name, used for example in the `.app` name for MacOS
+    // human-readable name, used for example in the `.app` name for macOS
     humanName.set("Game")
     version.set("0.0.0")
     // where to put the packaged zips
@@ -53,11 +47,13 @@ construo {
             // jdk url to use as a base for the minimized image
             jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_x64_linux_hotspot_17.0.8_7.tar.gz")
         }
-        // MacOS ARM processors
+        // macOS ARM processors
         create<Target.MacOs>("macM1") {
             architecture.set(Target.Architecture.AARCH64)
-            // MacOS needs an identifier
+            // macOS needs an identifier
             identifier.set("io.github.fourlastor.Game")
+            // Optional: icon for macOS
+            macIcon.set(project.file("path/to/mac-icon.icns"))
             jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.8_7.tar.gz")
         }
         // Windows X64
@@ -74,16 +70,10 @@ Groovy DSL:
 ```groovy
 import io.github.fourlastor.construo.Target
 
-tasks.withType(Jar).configureEach {
-    manifest {
-        attributes 'Main-Class': "io.github.fourlastor.gdx.Main"
-    }
-}
-
 construo {
     // name of the executable
     name.set("game")
-    // human readable name, used for example in the `.app` name for MacOS
+    // human-readable name, used for example in the `.app` name for macOS
     humanName.set("Game")
     version.set("0.0.0")
     // where to put the packaged zips
@@ -95,10 +85,13 @@ construo {
             architecture.set(Target.Architecture.X86_64)
             jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_x64_linux_hotspot_17.0.8_7.tar.gz")
         }
-        // MacOS ARM processors
+        // macOS ARM processors
         create("macM1", Target.MacOs) {
             architecture.set(Target.Architecture.AARCH64)
+            // macOS needs an identifier
             identifier.set("io.github.fourlastor.Game")
+            // Optional: icon for macOS
+            macIcon.set(project.file("path/to/mac-icon.icns"))
             jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.8_7.tar.gz")
         }
         // Windows X64
