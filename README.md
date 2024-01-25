@@ -24,20 +24,18 @@ plugins {
 
 ## Configuration
 
-Make sure you set a main class in your jar task:
-
-```kotlin
-tasks.withType<Jar> {
-    manifest {
-        attributes["Main-Class"] = "io.github.fourlastor.gdx.Main"
-    }
-}
-```
+Make sure you set a main class in your jar task.
 
 Kotlin DSL:
 
 ```kotlin
 import io.github.fourlastor.construo.Target
+
+tasks.withType<Jar> {
+    manifest {
+        attributes["Main-Class"] = "io.github.fourlastor.gdx.Main"
+    }
+}
 
 construo {
     // name of the executable
@@ -76,6 +74,12 @@ Groovy DSL:
 ```groovy
 import io.github.fourlastor.construo.Target
 
+tasks.withType(Jar).configureEach {
+    manifest {
+        attributes 'Main-Class': "io.github.fourlastor.gdx.Main"
+    }
+}
+
 construo {
     // name of the executable
     name.set("game")
@@ -104,7 +108,6 @@ construo {
         }
     }
 }
-
 ```
 
 Each defined target will generate a `packageXXX` task, where `XXX` is the capitalized name of the target (for example: `packageLinuxX64`). Running the task will produce a zip inside the `outputDir` folder containing the fully packaged app.
