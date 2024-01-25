@@ -17,7 +17,6 @@ plugins {
 group = "io.github.fourlastor"
 version = "1.0.0"
 
-
 spotless {
     isEnforceCheck = false
     java {
@@ -41,8 +40,6 @@ application {
 construo {
     name.set("game")
     humanName.set("Game")
-    version.set("0.0.0")
-    outputDir.set(rootProject.file("dist"))
     targets {
         create<Target.Linux>("linuxX64") {
             architecture.set(Target.Architecture.X86_64)

@@ -29,6 +29,10 @@ class ConstruoPlugin : Plugin<Project> {
         val roastZipDir = baseBuildDir.map { it.dir("roast-zip") }
         val baseRoastExeDir = baseBuildDir.map { it.dir("roast-exe") }
         val jdkDir = baseBuildDir.map { it.dir("jdk") }
+        project.gradle.projectsEvaluated {
+            pluginExtension.version.convention(project.version.toString())
+        }
+        pluginExtension.outputDir.convention(baseBuildDir.map { it.dir("dist") })
 
         project.plugins.withType(ApplicationPlugin::class.java) {
             val javaApplication = project.extensions.getByType<JavaApplication>()
