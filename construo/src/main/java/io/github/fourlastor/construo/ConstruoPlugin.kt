@@ -9,11 +9,14 @@ import io.github.fourlastor.construo.task.macos.GeneratePlist
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.file.Directory
+import org.gradle.api.plugins.ApplicationPlugin
+import org.gradle.api.plugins.JavaApplication
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.bundling.Zip
 import org.gradle.configurationcache.extensions.capitalized
 import org.gradle.jvm.tasks.Jar
+import org.gradle.kotlin.dsl.getByType
 import java.io.File
 
 class ConstruoPlugin : Plugin<Project> {
@@ -26,6 +29,11 @@ class ConstruoPlugin : Plugin<Project> {
         val roastZipDir = baseBuildDir.map { it.dir("roast-zip") }
         val baseRoastExeDir = baseBuildDir.map { it.dir("roast-exe") }
         val jdkDir = baseBuildDir.map { it.dir("jdk") }
+
+        project.plugins.withType(ApplicationPlugin::class.java) {
+            val javaApplication = project.extensions.getByType<JavaApplication>()
+            pluginExtension.mainClass.set(javaApplication.mainClass)
+        }
 
         // Register the correct tasks for each target
         pluginExtension.targets.all {
@@ -75,7 +83,11 @@ class ConstruoPlugin : Plugin<Project> {
             val runningJdkRoot = pluginExtension.jdkRoot.orElse(project.layout.dir(project.provider { File(System.getProperty("java.home")) }))
             val jdkTargetRoot = project.layout.dir(unzipJdk.map { it.destinationDir }).findJdkRoot()
             val jarTask = (tasks.findByName("shadowJar") ?: tasks.findByName("jar")) as Jar
-            val mainClass = jarTask.manifest.attributes["Main-Class"] as String
+
+            if (!pluginExtension.mainClass.isPresent) {
+                pluginExtension.mainClass.set(jarTask.manifest.attributes["Main-Class"] as String)
+            }
+
             val jarFileLocation = jarTask.archiveFile
 
             val createRuntimeImage =
@@ -124,7 +136,7 @@ class ConstruoPlugin : Plugin<Project> {
                 targetProperty.set(target)
                 jdkRoot.set(createRuntimeImage.flatMap { it.output })
                 appName.set(pluginExtension.name)
-                mainClassName.set(mainClass)
+                mainClassName.set(pluginExtension.mainClass)
                 jarFile.set(jarFileLocation)
                 output.set(targetRoastDir)
                 roastExe.set(targetRoastExeDir.map { it.file("roast-${target.roastName()}") })

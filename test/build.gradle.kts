@@ -38,12 +38,6 @@ application {
     mainClass.set("io.github.fourlastor.gdx.Main")
 }
 
-tasks.withType<Jar> {
-    manifest {
-        attributes["Main-Class"] = "io.github.fourlastor.gdx.Main"
-    }
-}
-
 construo {
     name.set("game")
     humanName.set("Game")
