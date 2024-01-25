@@ -14,10 +14,8 @@ abstract class ConstruoPluginExtension @Inject constructor(
     abstract val name: Property<String>
     abstract val humanName: Property<String>
     abstract val info: Property<String>
-    abstract val identifier: Property<String>
     abstract val version: Property<String>
     abstract val outputDir: DirectoryProperty
-    abstract val macIcon: RegularFileProperty
     abstract val jdkRoot: DirectoryProperty
     abstract val mainClass: Property<String>
     val targets: ExtensiblePolymorphicDomainObjectContainer<Target> = objectFactory.polymorphicDomainObjectContainer(Target::class.java)
@@ -33,7 +31,11 @@ interface Target : Named {
     val architecture: Property<Architecture>
     val jdkUrl: Property<String>
     interface Linux : Target
-    interface MacOs : Target
+    interface MacOs : Target {
+        val identifier: Property<String>
+        val macIcon: RegularFileProperty
+    }
+
     interface Windows : Target
     enum class Architecture(val arch: String) {
         X86_64("x64"),

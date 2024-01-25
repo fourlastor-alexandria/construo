@@ -163,8 +163,8 @@ class ConstruoPlugin : Plugin<Project> {
                         humanName.set(pluginExtension.humanName)
                         info.set(pluginExtension.info)
                         executable.set(pluginExtension.name)
-                        identifier.set(pluginExtension.identifier)
-                        icon.set(pluginExtension.macIcon)
+                        identifier.set(target.identifier)
+                        icon.set(target.macIcon)
                         outputFile.set(pListFile)
                     }
 
@@ -173,7 +173,7 @@ class ConstruoPlugin : Plugin<Project> {
                             dependsOn(packageRoast, generatePlist)
                             packagedAppDir.set(targetRoastDir)
                             outputDirectory.set(macAppDir)
-                            icon.set(pluginExtension.macIcon)
+                            icon.set(target.macIcon)
                             plist.set(pListFile)
                         }
 
