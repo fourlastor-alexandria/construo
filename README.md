@@ -38,7 +38,11 @@ construo {
     name.set("game")
     // human-readable name, used for example in the `.app` name for macOS
     humanName.set("Game")
+    // Optional, defaults to project version
     version.set("0.0.0")
+    // Optional, defaults to application.mainClass or jar task main class
+    mainClass.set("io.github.fourlastor.gdx.Main")
+    // Optional, defaults to $buildDir/construo/dist
     // where to put the packaged zips
     outputDir.set(rootProject.file("dist"))
     // outputs configuration
@@ -77,7 +81,11 @@ construo {
     name.set("game")
     // human-readable name, used for example in the `.app` name for macOS
     humanName.set("Game")
+    // Optional, defaults to project version
     version.set("0.0.0")
+    // Optional, defaults to application.mainClass or jar task main class
+    mainClass.set("io.github.fourlastor.gdx.Main")
+    // Optional, defaults to $buildDir/construo/dist
     // where to put the packaged zips
     outputDir.set(rootProject.file("dist"))
     // outputs configuration
