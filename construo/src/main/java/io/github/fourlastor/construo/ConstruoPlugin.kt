@@ -100,6 +100,7 @@ class ConstruoPlugin : Plugin<Project> {
                     jdkRoot.set(runningJdkRoot)
                     jarFile.set(jarFileLocation)
                     targetJdkRoot.set(jdkTargetRoot)
+                    modules.set(pluginExtension.jlink.modules)
                     output.set(targetRuntimeImageBuildDir)
                 }
 
