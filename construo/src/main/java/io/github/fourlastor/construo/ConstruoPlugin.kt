@@ -109,7 +109,7 @@ class ConstruoPlugin : Plugin<Project> {
             fun Target.roastName(): String = when (this) {
                 is Target.Windows -> {
                     check(architecture.get() == Target.Architecture.X86_64) { "Only Windows 64 bit is supported" }
-                    if (this.useGpuHint.getOrElse(true)) {
+                    if (useGpuHint.getOrElse(true)) {
                         "win-64.exe"
                     } else {
                         "win-no-gpu-64.exe"
