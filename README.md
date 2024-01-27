@@ -45,6 +45,10 @@ construo {
     // Optional, defaults to $buildDir/construo/dist
     // where to put the packaged zips
     outputDir.set(rootProject.file("dist"))
+    jlink {
+        // add extra modules to be included when running jlink
+        modules.addAll("jdk.zipfs")
+    }
     // outputs configuration
     targets {
         // Linux X64
@@ -88,6 +92,10 @@ construo {
     // Optional, defaults to $buildDir/construo/dist
     // where to put the packaged zips
     outputDir.set(rootProject.file("dist"))
+    jlink {
+        // add extra modules to be included when running jlink
+        modules.addAll("jdk.zipfs")
+    }
     // outputs configuration
     targets.configure {
         // Linux X64
