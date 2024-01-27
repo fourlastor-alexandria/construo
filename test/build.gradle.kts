@@ -63,6 +63,10 @@ construo {
     jlink {
         modules.addAll("jdk.zipfs")
     }
+    roast {
+        useZgc.set(false)
+        useMainAsContextClassLoader.set(true)
+    }
 }
 
 dependencies {

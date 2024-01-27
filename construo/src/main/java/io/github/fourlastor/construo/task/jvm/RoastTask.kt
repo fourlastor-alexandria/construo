@@ -8,6 +8,7 @@ import kotlinx.serialization.json.Json
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
@@ -39,6 +40,15 @@ abstract class RoastTask @Inject constructor(
     @get:Input
     abstract val targetProperty: Property<Target>
 
+    @get:Input
+    abstract val vmArgs: ListProperty<String>
+
+    @get:Input
+    abstract val useZgc: Property<Boolean>
+
+    @get:Input
+    abstract val useMainAsContextClassLoader: Property<Boolean>
+
     @get:OutputDirectory
     abstract val output: DirectoryProperty
 
@@ -57,8 +67,9 @@ abstract class RoastTask @Inject constructor(
                     PackConfig(
                         listOf(jarFile.get().asFile.name),
                         mainClass = mainClassName.get(),
-                        vmArgs = listOf("-Xmx1G"),
-                        useZgcIfSupportedOs = true
+                        vmArgs = vmArgs.get(),
+                        useZgcIfSupportedOs = useZgc.get(),
+                        useMainAsContextClassLoader = useMainAsContextClassLoader.get()
                     )
                 )
             )
@@ -96,6 +107,7 @@ abstract class RoastTask @Inject constructor(
         val classPath: List<String>,
         val mainClass: String,
         val useZgcIfSupportedOs: Boolean,
+        val useMainAsContextClassLoader: Boolean,
         val vmArgs: List<String>
     )
 }
