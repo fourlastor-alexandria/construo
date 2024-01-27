@@ -33,6 +33,8 @@ class ConstruoPlugin : Plugin<Project> {
             pluginExtension.version.convention(project.version.toString())
         }
         pluginExtension.outputDir.convention(baseBuildDir.map { it.dir("dist") })
+        pluginExtension.roast.useZgc.convention(true)
+        pluginExtension.roast.useMainAsContextClassLoader.convention(false)
 
         project.plugins.withType(ApplicationPlugin::class.java) {
             val javaApplication = project.extensions.getByType<JavaApplication>()
@@ -125,7 +127,7 @@ class ConstruoPlugin : Plugin<Project> {
 
             val downloadRoast = tasks.register("downloadRoast$capitalized", Download::class.java) {
                 group = GROUP_NAME
-                src("https://github.com/fourlastor-alexandria/roast/releases/download/v0.0.4/roast-${target.roastName()}.zip")
+                src("https://github.com/fourlastor-alexandria/roast/releases/download/v0.0.6/roast-${target.roastName()}.zip")
                 dest(roastZipDir)
                 overwrite(false)
             }
@@ -143,6 +145,9 @@ class ConstruoPlugin : Plugin<Project> {
                 appName.set(pluginExtension.name)
                 mainClassName.set(pluginExtension.mainClass)
                 jarFile.set(jarFileLocation)
+                vmArgs.set(pluginExtension.roast.vmArgs)
+                useZgc.set(pluginExtension.roast.useZgc)
+                useMainAsContextClassLoader.set(pluginExtension.roast.useMainAsContextClassLoader)
                 output.set(targetRoastDir)
                 roastExe.set(targetRoastExeDir.map { it.file("roast-${target.roastName()}") })
             }

@@ -22,6 +22,8 @@ abstract class ConstruoPluginExtension @Inject constructor(
     abstract val mainClass: Property<String>
     val targets: ExtensiblePolymorphicDomainObjectContainer<Target> = objectFactory.polymorphicDomainObjectContainer(Target::class.java)
     val jlink: JlinkOptions = objectFactory.newInstance(JlinkOptions::class.java)
+    val roast: RoastOptions = objectFactory.newInstance(RoastOptions::class.java)
+
     init {
         targets.registerBinding(Target.Linux::class.java, Target.Linux::class.java)
         targets.registerBinding(Target.MacOs::class.java, Target.MacOs::class.java)
@@ -31,10 +33,20 @@ abstract class ConstruoPluginExtension @Inject constructor(
     fun jlink(action: Action<in JlinkOptions>) {
         action.execute(jlink)
     }
+
+    fun roast(action: Action<in RoastOptions>) {
+        action.execute(roast)
+    }
 }
 
 interface JlinkOptions {
     val modules: ListProperty<String>
+}
+
+interface RoastOptions {
+    val vmArgs: ListProperty<String>
+    val useZgc: Property<Boolean>
+    val useMainAsContextClassLoader: Property<Boolean>
 }
 
 interface Target : Named {
