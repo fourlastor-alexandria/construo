@@ -59,7 +59,9 @@ interface Target : Named {
         val macIcon: RegularFileProperty
     }
 
-    interface Windows : Target
+    interface Windows : Target {
+        val useGpuHint: Property<Boolean>
+    }
     enum class Architecture(val arch: String) {
         X86_64("x64"),
         AARCH64("aarch64"),
