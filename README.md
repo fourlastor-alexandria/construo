@@ -49,6 +49,15 @@ construo {
         // add extra modules to be included when running jlink
         modules.addAll("jdk.zipfs")
     }
+    // these options will be passed to roast via the config.json file
+    roast {
+        // use zgc garbage collector, defaults to true
+        useZgc.set(false)
+        // use the main class as the context class loader, defaults to false, useful for compose apps
+        useMainAsContextClassLoader.set(true)
+        // vm startup options
+        vmOptions.addAll("-Xmx1G")
+    }
     // outputs configuration
     targets {
         // Linux X64
@@ -95,6 +104,15 @@ construo {
     jlink {
         // add extra modules to be included when running jlink
         modules.addAll("jdk.zipfs")
+    }
+    // these options will be passed to roast via the config.json file
+    roast {
+        // use zgc garbage collector, defaults to true
+        useZgc.set(false)
+        // use the main class as the context class loader, defaults to false, useful for compose apps
+        useMainAsContextClassLoader.set(true)
+        // vm startup options
+        vmOptions.addAll("-Xmx1G")
     }
     // outputs configuration
     targets.configure {
