@@ -1,6 +1,5 @@
 package io.github.fourlastor.construo.task.jvm
 
-import io.github.fourlastor.construo.Target
 import io.github.fourlastor.construo.task.BaseTask
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
