@@ -17,7 +17,6 @@ plugins {
 group = "io.github.fourlastor"
 version = "1.0.0"
 
-
 spotless {
     isEnforceCheck = false
     java {
@@ -41,8 +40,6 @@ application {
 construo {
     name.set("game")
     humanName.set("Game")
-    version.set("0.0.0")
-    outputDir.set(rootProject.file("dist"))
     targets {
         create<Target.Linux>("linuxX64") {
             architecture.set(Target.Architecture.X86_64)
@@ -62,6 +59,9 @@ construo {
             architecture.set(Target.Architecture.X86_64)
             jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_x64_windows_hotspot_17.0.8_7.zip")
         }
+    }
+    jlink {
+        modules.addAll("jdk.zipfs")
     }
 }
 

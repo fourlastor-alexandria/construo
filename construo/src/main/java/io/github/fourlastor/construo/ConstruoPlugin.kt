@@ -29,6 +29,10 @@ class ConstruoPlugin : Plugin<Project> {
         val roastZipDir = baseBuildDir.map { it.dir("roast-zip") }
         val baseRoastExeDir = baseBuildDir.map { it.dir("roast-exe") }
         val jdkDir = baseBuildDir.map { it.dir("jdk") }
+        project.gradle.projectsEvaluated {
+            pluginExtension.version.convention(project.version.toString())
+        }
+        pluginExtension.outputDir.convention(baseBuildDir.map { it.dir("dist") })
 
         project.plugins.withType(ApplicationPlugin::class.java) {
             val javaApplication = project.extensions.getByType<JavaApplication>()
@@ -96,6 +100,7 @@ class ConstruoPlugin : Plugin<Project> {
                     jdkRoot.set(runningJdkRoot)
                     jarFile.set(jarFileLocation)
                     targetJdkRoot.set(jdkTargetRoot)
+                    modules.set(pluginExtension.jlink.modules)
                     output.set(targetRuntimeImageBuildDir)
                 }
 
@@ -163,8 +168,8 @@ class ConstruoPlugin : Plugin<Project> {
                         humanName.set(pluginExtension.humanName)
                         info.set(pluginExtension.info)
                         executable.set(pluginExtension.name)
-                        identifier.set(pluginExtension.identifier)
-                        icon.set(pluginExtension.macIcon)
+                        identifier.set(target.identifier)
+                        icon.set(target.macIcon)
                         outputFile.set(pListFile)
                     }
 
@@ -173,7 +178,7 @@ class ConstruoPlugin : Plugin<Project> {
                             dependsOn(packageRoast, generatePlist)
                             packagedAppDir.set(targetRoastDir)
                             outputDirectory.set(macAppDir)
-                            icon.set(pluginExtension.macIcon)
+                            icon.set(target.macIcon)
                             plist.set(pListFile)
                         }
 
