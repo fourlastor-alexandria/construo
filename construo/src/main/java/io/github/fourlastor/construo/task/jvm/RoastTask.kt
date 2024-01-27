@@ -1,6 +1,5 @@
 package io.github.fourlastor.construo.task.jvm
 
-import io.github.fourlastor.construo.Target
 import io.github.fourlastor.construo.task.BaseTask
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -36,9 +35,6 @@ abstract class RoastTask @Inject constructor(
 
     @get:InputFile
     abstract val jarFile: RegularFileProperty
-
-    @get:Input
-    abstract val targetProperty: Property<Target>
 
     @get:Input
     abstract val vmArgs: ListProperty<String>
@@ -79,11 +75,11 @@ abstract class RoastTask @Inject constructor(
             from(roastExe)
             rename {
                 appName.flatMap { name ->
-                    targetProperty.map {
-                        if (it is Target.Windows) {
-                            "$name.exe"
-                        } else {
+                    roastExe.map {
+                        if (it.asFile.extension.isEmpty()) {
                             name
+                        } else {
+                            "$name.exe"
                         }
                     }
                 }.get()
