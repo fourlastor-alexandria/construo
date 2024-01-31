@@ -1,7 +1,6 @@
 package io.github.fourlastor.construo
 
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import de.undercouch.gradle.tasks.download.Download
 import de.undercouch.gradle.tasks.download.DownloadTaskPlugin
 import io.github.fourlastor.construo.foojay.FooJayVendorAliases
@@ -33,7 +32,6 @@ class ConstruoPlugin : Plugin<Project> {
 
     private val okHttpClient = OkHttpClient()
     private val moshi = Moshi.Builder()
-        .addLast(KotlinJsonAdapterFactory())
         .build()
 
     private data class DownloadJdkOptions(

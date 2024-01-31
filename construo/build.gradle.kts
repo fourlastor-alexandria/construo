@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.plugin.publish)
     alias(libs.plugins.spotless)
     alias(libs.plugins.jetbrains.kotlin.jvm)
+    alias(libs.plugins.jetbrains.kotlin.kapt)
     alias(libs.plugins.jetbrains.kotlin.serialization)
 }
 
@@ -51,7 +52,7 @@ gradlePlugin {
 dependencies {
     implementation(libs.download)
     implementation(libs.square.moshi.core)
-    implementation(libs.square.moshi.kotlin)
+    kapt(libs.square.moshi.codegen)
     implementation(libs.square.okhttp)
     implementation(libs.xmlBuilder)
     implementation(libs.shadow)
