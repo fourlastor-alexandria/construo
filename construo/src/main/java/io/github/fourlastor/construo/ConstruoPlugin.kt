@@ -1,11 +1,19 @@
 package io.github.fourlastor.construo
 
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import de.undercouch.gradle.tasks.download.Download
 import de.undercouch.gradle.tasks.download.DownloadTaskPlugin
+import io.github.fourlastor.construo.foojay.PackageInfo
+import io.github.fourlastor.construo.foojay.PackageInfoResults
+import io.github.fourlastor.construo.foojay.PackagesResults
 import io.github.fourlastor.construo.task.jvm.CreateRuntimeImageTask
 import io.github.fourlastor.construo.task.jvm.RoastTask
 import io.github.fourlastor.construo.task.macos.BuildMacAppBundle
 import io.github.fourlastor.construo.task.macos.GeneratePlist
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.file.Directory
@@ -17,9 +25,22 @@ import org.gradle.api.tasks.bundling.Zip
 import org.gradle.configurationcache.extensions.capitalized
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.getByType
+import org.gradle.toolchains.foojay.vendorAliases
 import java.io.File
+import java.io.IOException
 
 class ConstruoPlugin : Plugin<Project> {
+
+    private val okHttpClient = OkHttpClient()
+    private val moshi = Moshi.Builder()
+        .addLast(KotlinJsonAdapterFactory())
+        .build()
+
+    private data class DownloadJdkOptions(
+        val url: String,
+        val filename: String
+    )
+
     override fun apply(project: Project) {
         project.plugins.apply(DownloadTaskPlugin::class.java)
         val pluginExtension = project.extensions.create("construo", ConstruoPluginExtension::class.java)
@@ -53,12 +74,28 @@ class ConstruoPlugin : Plugin<Project> {
                 pluginExtension.version.map { version -> "$name-$version-${target.name}" }
             }
 
+            val url = target.jdkUrl.map {
+                val extension = if (it.endsWith(".zip")) "zip" else "tar.gz"
+                DownloadJdkOptions(
+                    url = it,
+                    filename = "${target.name}.$extension"
+                )
+            }.orElse(
+                pluginExtension.toolchain.map {
+                    val packageInfo = getPackageInfoFromFooJay(it, target)
+                    DownloadJdkOptions(
+                        url = packageInfo.directDownloadUri,
+                        filename = packageInfo.filename
+                    )
+                }
+            )
+
             val downloadJdk = tasks.register("downloadJdk$capitalized", Download::class.java) {
                 group = GROUP_NAME
-                src(listOf(target.jdkUrl))
+                src(listOf(url.map { it.url }))
                 dest(
-                    target.jdkUrl.flatMap { url ->
-                        val extension = if (url.endsWith(".zip")) "zip" else "tar.gz"
+                    url.flatMap { url ->
+                        val extension = if (url.filename.endsWith(".zip")) "zip" else "tar.gz"
                         jdkDir.map { it.file("${target.name}.$extension") }
                     }
                 )
@@ -201,6 +238,60 @@ class ConstruoPlugin : Plugin<Project> {
                 }
             }
         }
+    }
+
+    private fun getPackageInfoFromFooJay(
+        it: ToolchainOptions,
+        target: Target
+    ): PackageInfo {
+        val jvmPackage = okHttpClient.newCall(
+            Request.Builder()
+                .header("Accept", "application/json")
+                .url(
+                    HttpUrl.Builder()
+                        .scheme("https")
+                        .host("api.foojay.io")
+                        .encodedPath("/disco/v3.0/packages")
+                        .addQueryParameter("jdk_version", it.version.toString())
+                        .addQueryParameter("architecture", target.architecture.get().arch)
+                        .addQueryParameter("archive_type", "zip")
+                        .addQueryParameter("archive_type", "tar.gz")
+                        .addQueryParameter("package_type", "jre")
+                        .addQueryParameter("distribution", vendorAliases[it.vendor])
+                        .addQueryParameter("operating_system", target.osName())
+                        .addQueryParameter("directly_downloadable", "true")
+                        .build()
+                )
+                .build()
+        ).execute().use { response ->
+            if (!response.isSuccessful) throw IOException("Failed to get packages")
+            moshi.adapter(PackagesResults::class.java)
+                .fromJson(response.body!!.source())!!
+                .result
+                .first()
+        }
+
+        val packageInfo = okHttpClient.newCall(
+            Request.Builder()
+                .url(jvmPackage.links.packageInfoUri)
+                .build()
+        )
+            .execute()
+            .use { response ->
+                if (!response.isSuccessful) throw IOException("Failed to get package download")
+                moshi.adapter(PackageInfoResults::class.java)
+                    .fromJson(response.body!!.source())!!
+                    .result
+                    .first()
+            }
+        return packageInfo
+    }
+
+    private fun Target.osName() = when (this) {
+        is Target.Linux -> "linux"
+        is Target.Windows -> "windows"
+        is Target.MacOs -> "macos"
+        else -> error("Invalid target")
     }
 
     private fun Provider<Directory>.findJdkRoot() = this.map { root ->

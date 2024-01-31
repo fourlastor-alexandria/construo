@@ -8,6 +8,8 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.gradle.jvm.toolchain.JvmVendorSpec
 import javax.inject.Inject
 
 abstract class ConstruoPluginExtension @Inject constructor(
@@ -23,6 +25,7 @@ abstract class ConstruoPluginExtension @Inject constructor(
     val targets: ExtensiblePolymorphicDomainObjectContainer<Target> = objectFactory.polymorphicDomainObjectContainer(Target::class.java)
     val jlink: JlinkOptions = objectFactory.newInstance(JlinkOptions::class.java)
     val roast: RoastOptions = objectFactory.newInstance(RoastOptions::class.java)
+    abstract val toolchain: Property<ToolchainOptions>
 
     init {
         targets.registerBinding(Target.Linux::class.java, Target.Linux::class.java)
@@ -38,6 +41,11 @@ abstract class ConstruoPluginExtension @Inject constructor(
         action.execute(roast)
     }
 }
+
+data class ToolchainOptions(
+    val version: JavaLanguageVersion,
+    val vendor: JvmVendorSpec
+)
 
 interface JlinkOptions {
     val modules: ListProperty<String>

@@ -1,4 +1,5 @@
 import io.github.fourlastor.construo.Target
+import io.github.fourlastor.construo.ToolchainOptions
 
 buildscript {
     repositories {
@@ -40,10 +41,14 @@ application {
 construo {
     name.set("game")
     humanName.set("Game")
+    toolchain.set(ToolchainOptions(
+        JavaLanguageVersion.of(17),
+        JvmVendorSpec.ADOPTIUM,
+    ))
     targets {
         create<Target.Linux>("linuxX64") {
             architecture.set(Target.Architecture.X86_64)
-            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_x64_linux_hotspot_17.0.8_7.tar.gz")
+//            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_x64_linux_hotspot_17.0.8_7.tar.gz")
         }
         create<Target.MacOs>("macX64") {
             architecture.set(Target.Architecture.X86_64)
