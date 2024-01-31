@@ -137,6 +137,7 @@ class ConstruoPlugin : Plugin<Project> {
             }
             val targetRoastExeDir = baseRoastExeDir.map { it.dir(target.name) }
             val unzipRoast = tasks.register("unzipRoast$capitalized", Copy::class.java) {
+                group = GROUP_NAME
                 dependsOn(downloadRoast)
                 from(project.zipTree(roastZipDir.map { it.file("roast-${target.roastName()}.zip") }))
                 into(targetRoastExeDir)
