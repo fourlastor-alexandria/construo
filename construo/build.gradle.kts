@@ -50,7 +50,6 @@ gradlePlugin {
 
 dependencies {
     implementation(libs.download)
-    implementation(libs.foojay)
     implementation(libs.square.moshi.core)
     implementation(libs.square.moshi.kotlin)
     implementation(libs.square.okhttp)

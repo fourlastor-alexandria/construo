@@ -4,6 +4,7 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import de.undercouch.gradle.tasks.download.Download
 import de.undercouch.gradle.tasks.download.DownloadTaskPlugin
+import io.github.fourlastor.construo.foojay.FooJayVendorAliases
 import io.github.fourlastor.construo.foojay.PackageInfo
 import io.github.fourlastor.construo.foojay.PackageInfoResults
 import io.github.fourlastor.construo.foojay.PackagesResults
@@ -25,7 +26,6 @@ import org.gradle.api.tasks.bundling.Zip
 import org.gradle.configurationcache.extensions.capitalized
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.getByType
-import org.gradle.toolchains.foojay.vendorAliases
 import java.io.File
 import java.io.IOException
 
@@ -257,7 +257,7 @@ class ConstruoPlugin : Plugin<Project> {
                         .addQueryParameter("archive_type", "zip")
                         .addQueryParameter("archive_type", "tar.gz")
                         .addQueryParameter("package_type", "jre")
-                        .addQueryParameter("distribution", vendorAliases[it.vendor])
+                        .addQueryParameter("distribution", FooJayVendorAliases.values[it.vendor])
                         .addQueryParameter("operating_system", target.osName())
                         .addQueryParameter("directly_downloadable", "true")
                         .build()

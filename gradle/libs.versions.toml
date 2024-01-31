@@ -1,6 +1,5 @@
 [versions]
 download = "5.4.0"
-foojay = "0.8.0"
 gdx = "1.11.0"
 jetbrains-kotlin = "1.7.10"
 kotlinx-serialization = "1.4.0"
@@ -12,7 +11,6 @@ spotless = "6.10.0"
 xmlBuilder = "1.9.0"
 [libraries]
 download = { module = "de.undercouch:gradle-download-task", version.ref = "download" }
-foojay = { module = "org.gradle.toolchains:foojay-resolver", version.ref = "foojay" }
 gdx-core = { module = "com.badlogicgames.gdx:gdx", version.ref = "gdx" }
 gdx-platform = { module = "com.badlogicgames.gdx:gdx-platform", version.ref = "gdx" }
 gdx-backend-lwjgl3 = { module = "com.badlogicgames.gdx:gdx-backend-lwjgl3", version.ref = "gdx" }
