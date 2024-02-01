@@ -17,6 +17,7 @@ spotless {
     isEnforceCheck = false
     kotlin {
         ktlint()
+        target("src")
     }
 }
 
