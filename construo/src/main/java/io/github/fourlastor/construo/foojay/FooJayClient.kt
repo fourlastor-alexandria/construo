@@ -40,8 +40,10 @@ class FooJayClient {
         ).execute().use { response ->
             if (!response.isSuccessful) throw IOException("Failed to get packages")
             val body = requireNotNull(response.body) { "FooJay packages response was null" }
-            requireNotNull(moshi.adapter(PackagesResults::class.java)
-                .fromJson(body.source())) { "Packages deserialization returned null" }
+            requireNotNull(
+                moshi.adapter(PackagesResults::class.java)
+                    .fromJson(body.source())
+            ) { "Packages deserialization returned null" }
                 .result
                 .first()
         }
@@ -55,8 +57,10 @@ class FooJayClient {
             .use { response ->
                 if (!response.isSuccessful) throw IOException("Failed to get package download")
                 val body = requireNotNull(response.body) { "FooJay package download response was null" }
-                requireNotNull(moshi.adapter(PackageInfoResults::class.java)
-                    .fromJson(body.source())) { "Package download deserialization returned null" }
+                requireNotNull(
+                    moshi.adapter(PackageInfoResults::class.java)
+                        .fromJson(body.source())
+                ) { "Package download deserialization returned null" }
                     .result
                     .first()
             }
