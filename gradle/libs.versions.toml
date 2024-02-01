@@ -3,7 +3,7 @@ download = "5.4.0"
 gdx = "1.11.0"
 jetbrains-kotlin = "1.7.10"
 kotlinx-serialization = "1.4.0"
-ksp = "1.7.10-1.0.6"
+ksp = "1.9.21-1.0.15"
 moshi = "1.15.0"
 okhttp = "4.12.0"
 plugin-publish = "1.2.1"
@@ -25,7 +25,6 @@ xmlBuilder = { module = "org.redundent:kotlin-xml-builder", version.ref = "xmlBu
 [plugins]
 google-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "jetbrains-kotlin" }
-jetbrains-kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "jetbrains-kotlin" }
 jetbrains-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "jetbrains-kotlin" }
 plugin-publish = { id = "com.gradle.plugin-publish", version.ref = "plugin-publish"}
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }

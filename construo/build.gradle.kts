@@ -1,11 +1,11 @@
 plugins {
     `kotlin-dsl`
     `maven-publish`
+    alias(libs.plugins.jetbrains.kotlin.jvm)
+    alias(libs.plugins.jetbrains.kotlin.serialization)
+    alias(libs.plugins.google.ksp)
     alias(libs.plugins.plugin.publish)
     alias(libs.plugins.spotless)
-    alias(libs.plugins.jetbrains.kotlin.jvm)
-    alias(libs.plugins.jetbrains.kotlin.kapt)
-    alias(libs.plugins.jetbrains.kotlin.serialization)
 }
 
 repositories {
@@ -52,7 +52,7 @@ gradlePlugin {
 dependencies {
     implementation(libs.download)
     implementation(libs.square.moshi.core)
-    kapt(libs.square.moshi.codegen)
+    ksp(libs.square.moshi.codegen)
     implementation(libs.square.okhttp)
     implementation(libs.xmlBuilder)
     implementation(libs.shadow)
