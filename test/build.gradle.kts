@@ -1,5 +1,6 @@
 import io.github.fourlastor.construo.Target
 import io.github.fourlastor.construo.ToolchainOptions
+import io.github.fourlastor.construo.ToolchainVersion
 
 buildscript {
     repositories {
@@ -42,7 +43,7 @@ construo {
     name.set("game")
     humanName.set("Game")
     toolchain.set(ToolchainOptions(
-        JavaLanguageVersion.of(17),
+        ToolchainVersion.of("17.0.9+9.1"),
         JvmVendorSpec.ADOPTIUM,
     ))
     targets {

@@ -8,7 +8,6 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
-import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.jvm.toolchain.JvmVendorSpec
 import javax.inject.Inject
 
@@ -43,9 +42,30 @@ abstract class ConstruoPluginExtension @Inject constructor(
 }
 
 data class ToolchainOptions(
-    val version: JavaLanguageVersion,
+    val version: ToolchainVersion,
     val vendor: JvmVendorSpec
 )
+
+sealed interface ToolchainVersion {
+
+    val versionParam: String
+    val versionString: String
+    data class JdkVersion(val version: Int) : ToolchainVersion {
+        override val versionParam: String
+            get() = "jdk_version"
+        override val versionString: String
+            get() = version.toString()
+    }
+    data class SpecificVersion(override val versionString: String) : ToolchainVersion {
+        override val versionParam: String
+            get() = "version"
+    }
+
+    companion object {
+        fun of(version: Int) = JdkVersion(version)
+        fun of(version: String) = SpecificVersion(version)
+    }
+}
 
 interface JlinkOptions {
     val modules: ListProperty<String>

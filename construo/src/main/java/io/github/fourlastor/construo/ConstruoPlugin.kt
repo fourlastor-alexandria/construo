@@ -250,7 +250,7 @@ class ConstruoPlugin : Plugin<Project> {
                         .scheme("https")
                         .host("api.foojay.io")
                         .encodedPath("/disco/v3.0/packages")
-                        .addQueryParameter("jdk_version", it.version.toString())
+                        .addQueryParameter(it.version.versionParam, it.version.versionString)
                         .addQueryParameter("architecture", target.architecture.get().arch)
                         .addQueryParameter("archive_type", "zip")
                         .addQueryParameter("archive_type", "tar.gz")
