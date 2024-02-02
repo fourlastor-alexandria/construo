@@ -71,7 +71,7 @@ class FooJayClient {
     private fun JvmVendorSpec.fooJayAlias() = when (this) {
         JvmVendorSpec.ADOPTIUM -> "Temurin"
         JvmVendorSpec.ADOPTOPENJDK -> "AOJ"
-        JvmVendorSpec.AMAZON -> "Corret->"
+        JvmVendorSpec.AMAZON -> "Corretto"
         JvmVendorSpec.AZUL -> "Zulu"
         JvmVendorSpec.BELLSOFT -> "Liberica"
         JvmVendorSpec.IBM -> "Semeru"
