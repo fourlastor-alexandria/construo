@@ -18,37 +18,45 @@ class FooJayClient {
         it: ToolchainOptions,
         target: Target
     ): PackageInfo {
-        val jvmPackage = okHttpClient.newCall(
-            Request.Builder()
-                .header("Accept", "application/json")
-                .url(
-                    HttpUrl.Builder()
-                        .scheme("https")
-                        .host("api.foojay.io")
-                        .encodedPath("/disco/v3.0/packages")
-                        .addQueryParameter(it.version.versionParam, it.version.versionString)
-                        .addQueryParameter("architecture", target.architecture.get().arch)
-                        .addQueryParameter("archive_type", "zip")
-                        .addQueryParameter("archive_type", "tar.gz")
-                        .addQueryParameter("package_type", "jre")
-                        .addQueryParameter("distribution", it.vendor.fooJayAlias())
-                        .addQueryParameter("operating_system", target.osName())
-                        .addQueryParameter("directly_downloadable", "true")
-                        .build()
-                )
-                .build()
-        ).execute().use { response ->
-            if (!response.isSuccessful) throw IOException("Failed to get packages")
-            val body = requireNotNull(response.body) { "FooJay packages response was null" }
-            requireNotNull(
-                moshi.adapter(PackagesResults::class.java)
-                    .fromJson(body.source())
-            ) { "Packages deserialization returned null" }
-                .result
-                .first()
-        }
+        val jvmPackage = fetchJvmPackage(it, target)
+        return fetchPackageDownloadInfo(jvmPackage)
+    }
 
-        val packageInfo = okHttpClient.newCall(
+    private fun fetchJvmPackage(
+        it: ToolchainOptions,
+        target: Target,
+    ) = okHttpClient.newCall(
+        Request.Builder()
+            .header("Accept", "application/json")
+            .url(
+                HttpUrl.Builder()
+                    .scheme("https")
+                    .host("api.foojay.io")
+                    .encodedPath("/disco/v3.0/packages")
+                    .addQueryParameter(it.version.versionParam, it.version.versionString)
+                    .addQueryParameter("architecture", target.architecture.get().arch)
+                    .addQueryParameter("archive_type", "zip")
+                    .addQueryParameter("archive_type", "tar.gz")
+                    .addQueryParameter("package_type", "jre")
+                    .addQueryParameter("distribution", it.vendor.fooJayAlias())
+                    .addQueryParameter("operating_system", target.osName())
+                    .addQueryParameter("directly_downloadable", "true")
+                    .build()
+            )
+            .build()
+    ).execute().use { response ->
+        if (!response.isSuccessful) throw IOException("Failed to get packages")
+        val body = requireNotNull(response.body) { "FooJay packages response was null" }
+        requireNotNull(
+            moshi.adapter(PackagesResults::class.java)
+                .fromJson(body.source())
+        ) { "Packages deserialization returned null" }
+            .result
+            .first()
+    }
+
+    private fun fetchPackageDownloadInfo(jvmPackage: Package) =
+        okHttpClient.newCall(
             Request.Builder()
                 .url(jvmPackage.links.packageInfoUri)
                 .build()
@@ -64,8 +72,6 @@ class FooJayClient {
                     .result
                     .first()
             }
-        return packageInfo
-    }
 
     @Suppress("DEPRECATION")
     private fun JvmVendorSpec.fooJayAlias() = when (this) {
