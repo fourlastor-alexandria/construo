@@ -50,13 +50,18 @@ sealed interface ToolchainVersion {
 
     val versionParam: String
     val versionString: String
+
     data class JdkVersion(val version: Int) : ToolchainVersion {
+
         override val versionParam: String
             get() = "jdk_version"
+
         override val versionString: String
             get() = version.toString()
     }
+
     data class SpecificVersion(override val versionString: String) : ToolchainVersion {
+
         override val versionParam: String
             get() = "version"
     }
