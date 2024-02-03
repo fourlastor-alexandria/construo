@@ -26,13 +26,11 @@ plugins {
 
 ## Configuration
 
-Make sure you set a main class in your jar task.
+### General config
 
-Kotlin DSL:
+These are the base options to set when using construo.
 
 ```kotlin
-import io.github.fourlastor.construo.Target
-
 construo {
     // name of the executable
     name.set("game")
@@ -45,94 +43,106 @@ construo {
     // Optional, defaults to $buildDir/construo/dist
     // where to put the packaged zips
     outputDir.set(rootProject.file("dist"))
+}
+```
+
+### JLink options
+
+You can add extra modules to the minimized JRE via the `jlink` block.
+
+```kotlin
+construo {
     jlink {
         // add extra modules to be included when running jlink
         modules.addAll("jdk.zipfs")
     }
-    // these options will be passed to roast via the config.json file
+}
+```
+
+### Roast options
+
+Construo uses [roast](https://github.com/fourlastor-alexandria/roast/) to run the application, a few options can be specified and will be set in its config.json.
+
+```kotlin
+construo {
     roast {
-        // use zgc garbage collector, defaults to true
+        // use ZGC garbage collector, defaults to true
         useZgc.set(false)
         // use the main class as the context class loader, defaults to false, useful for compose apps
         useMainAsContextClassLoader.set(true)
         // vm startup options
         vmOptions.addAll("-Xmx1G")
     }
-    // outputs configuration
+}
+```
+
+### Defining targets
+
+Targets define the output bundles construo will generate, each target will need to define the architecture, and an optional (if using the [foojay api](#using-foojay-instead-of-jre-urls)) JRE url for that specific target.
+
+#### Windows
+
+Windows targets support only the X86_64 architecture.
+
+The `useGpuHint` option specifies whether the packaged app will use the discrete GPU in hybrid systems (defaults to `true`).
+
+#### Macos
+
+The `identifier` option is mandatory.
+
+An icon can be optionally specified with `macOsIcon` on each target.
+
+<details open>
+<summary>Kotlin DSL</summary>
+
+```kotlin
+import io.github.fourlastor.construo.Target
+
+construo {
     targets {
-        // Linux X64
         create<Target.Linux>("linuxX64") {
             architecture.set(Target.Architecture.X86_64)
-            // jdk url to use as a base for the minimized image
-            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_x64_linux_hotspot_17.0.8_7.tar.gz")
+            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.10%2B7/OpenJDK17U-jre_x64_linux_hotspot_17.0.10_7.tar.gz")
         }
-        // macOS ARM processors
         create<Target.MacOs>("macM1") {
             architecture.set(Target.Architecture.AARCH64)
+            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.10%2B7/OpenJDK17U-jre_aarch64_mac_hotspot_17.0.10_7.pkg")
             // macOS needs an identifier
             identifier.set("io.github.fourlastor.Game")
             // Optional: icon for macOS
             macIcon.set(project.file("path/to/mac-icon.icns"))
-            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.8_7.tar.gz")
         }
-        // Windows X64
         create<Target.Windows>("winX64") {
             architecture.set(Target.Architecture.X86_64)
-            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_x64_windows_hotspot_17.0.8_7.zip")
+            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.10%2B7/OpenJDK17U-jre_x64_windows_hotspot_17.0.10_7.msi")
             // use executable with GPU hints, defaults to true
             useGpuHint.set(false)
         }
     }
 }
 ```
+</details>
 
-Groovy DSL:
+<details>
+<summary>Groovy DSL</summary>
 
 ```groovy
 import io.github.fourlastor.construo.Target
 
 construo {
-    // name of the executable
-    name.set("game")
-    // human-readable name, used for example in the `.app` name for macOS
-    humanName.set("Game")
-    // Optional, defaults to project version
-    version.set("0.0.0")
-    // Optional, defaults to application.mainClass or jar task main class
-    mainClass.set("io.github.fourlastor.gdx.Main")
-    // Optional, defaults to $buildDir/construo/dist
-    // where to put the packaged zips
-    outputDir.set(rootProject.file("dist"))
-    jlink {
-        // add extra modules to be included when running jlink
-        modules.addAll("jdk.zipfs")
-    }
-    // these options will be passed to roast via the config.json file
-    roast {
-        // use zgc garbage collector, defaults to true
-        useZgc.set(false)
-        // use the main class as the context class loader, defaults to false, useful for compose apps
-        useMainAsContextClassLoader.set(true)
-        // vm startup options
-        vmOptions.addAll("-Xmx1G")
-    }
-    // outputs configuration
     targets.configure {
-        // Linux X64
         create("linuxX64", Target.Linux) {
             architecture.set(Target.Architecture.X86_64)
-            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_x64_linux_hotspot_17.0.8_7.tar.gz")
+            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.10%2B7/OpenJDK17U-jre_x64_linux_hotspot_17.0.10_7.tar.gz")
         }
-        // macOS ARM processors
         create("macM1", Target.MacOs) {
             architecture.set(Target.Architecture.AARCH64)
+            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.8_7.tar.gz")
             // macOS needs an identifier
             identifier.set("io.github.fourlastor.Game")
             // Optional: icon for macOS
             macIcon.set(project.file("path/to/mac-icon.icns"))
-            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.8_7.tar.gz")
         }
-        // Windows X64
         create("winX64", Target.Windows) {
             architecture.set(Target.Architecture.X86_64)
             jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_x64_windows_hotspot_17.0.8_7.zip")
@@ -142,8 +152,29 @@ construo {
     }
 }
 ```
+</details>
 
 Each defined target will generate a `packageXXX` task, where `XXX` is the capitalized name of the target (for example: `packageLinuxX64`). Running the task will produce a zip inside the `outputDir` folder containing the fully packaged app.
 
-> [!NOTE]
-> Windows targets support only the X86_64 architecture.
+### Using foojay instead of JRE URLs
+
+Construo can figure out the JRE url for a specific build via the [foojay discovery api](https://github.com/foojayio/discoapi). This makes the `jdkUrl` option inside `targets` optional.
+
+```kotlin
+import io.github.fourlastor.construo.Target
+
+construo {
+    toolchain.set(ToolchainOptions(
+        ToolchainVersion.of("17.0.9+9.1"),
+        JvmVendorSpec.ADOPTIUM,
+    ))
+    targets {
+        create<Target.Linux>("linuxX64") {
+            // no need to specify a jdkUrl
+            architecture.set(Target.Architecture.X86_64)
+        }
+    }
+}
+```
+
+`ToolchainVersion.of()` accepts either a string, which must be a specific JRE version for that vendor, or an integer, which must be a major java version number (ie `ToolchainVersion.of(17)`).
