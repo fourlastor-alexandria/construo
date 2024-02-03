@@ -2,6 +2,7 @@ package io.github.fourlastor.construo
 
 import de.undercouch.gradle.tasks.download.Download
 import de.undercouch.gradle.tasks.download.DownloadTaskPlugin
+import io.github.fourlastor.construo.foojay.FooJayClient
 import io.github.fourlastor.construo.task.jvm.CreateRuntimeImageTask
 import io.github.fourlastor.construo.task.jvm.RoastTask
 import io.github.fourlastor.construo.task.macos.BuildMacAppBundle
@@ -20,6 +21,14 @@ import org.gradle.kotlin.dsl.getByType
 import java.io.File
 
 class ConstruoPlugin : Plugin<Project> {
+
+    private val fooJayClient = FooJayClient()
+
+    private data class DownloadJdkOptions(
+        val url: String,
+        val filename: String
+    )
+
     override fun apply(project: Project) {
         project.plugins.apply(DownloadTaskPlugin::class.java)
         val pluginExtension = project.extensions.create("construo", ConstruoPluginExtension::class.java)
@@ -53,12 +62,28 @@ class ConstruoPlugin : Plugin<Project> {
                 pluginExtension.version.map { version -> "$name-$version-${target.name}" }
             }
 
+            val url = target.jdkUrl.map {
+                val extension = if (it.endsWith(".zip")) "zip" else "tar.gz"
+                DownloadJdkOptions(
+                    url = it,
+                    filename = "${target.name}.$extension"
+                )
+            }.orElse(
+                pluginExtension.toolchain.map {
+                    val packageInfo = fooJayClient.getPackageInfo(it, target)
+                    DownloadJdkOptions(
+                        url = packageInfo.directDownloadUri,
+                        filename = packageInfo.filename
+                    )
+                }
+            )
+
             val downloadJdk = tasks.register("downloadJdk$capitalized", Download::class.java) {
                 group = GROUP_NAME
-                src(listOf(target.jdkUrl))
+                src(listOf(url.map { it.url }))
                 dest(
-                    target.jdkUrl.flatMap { url ->
-                        val extension = if (url.endsWith(".zip")) "zip" else "tar.gz"
+                    url.flatMap { url ->
+                        val extension = if (url.filename.endsWith(".zip")) "zip" else "tar.gz"
                         jdkDir.map { it.file("${target.name}.$extension") }
                     }
                 )
