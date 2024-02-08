@@ -15,16 +15,57 @@ class FooJayClient {
     private val moshi = Moshi.Builder().build()
 
     fun getPackageInfo(
-        it: ToolchainOptions,
+        toolchainOptions: ToolchainOptions,
         target: Target
     ): PackageInfo {
-        val jvmPackage = fetchJvmPackage(it, target)
+        val distribution = getDistribution(toolchainOptions.vendor)
+        val jvmPackage = fetchJvmPackage(toolchainOptions, target, distribution)
         return fetchPackageDownloadInfo(jvmPackage)
     }
 
+    private fun getDistribution(
+        vendor: JvmVendorSpec,
+    ): DistributionInfo = okHttpClient.newCall(
+        Request.Builder()
+            .header("Accept", "application/json")
+            .url(
+                HttpUrl.Builder()
+                    .scheme("https")
+                    .host("api.foojay.io")
+                    .encodedPath("/disco/v3.0/distributions")
+                    .addQueryParameter("include_versions", "false")
+                    .build()
+            )
+            .build()
+
+    )
+        .execute()
+        .use { response ->
+            if (!response.isSuccessful) throw IOException("Failed to get distributions")
+            val body = requireNotNull(response.body) { "FooJay distributions response was null" }
+            requireNotNull(
+                moshi.adapter(DistributionResults::class.java)
+                    .fromJson(body.source())
+            ) { "Distribution deserialization returned null" }
+        }
+        .result
+        .asSequence()
+        .filter {
+            if (!it.buildOfOpenjdk) return@filter false
+            val alias = vendor.fooJayAlias()
+            if (alias != null) {
+                return@filter it.name == alias
+            }
+
+            vendor.matches(it.name) || it.synonyms.any { vendor.matches(it) }
+        }
+        .firstOrNull()
+        .let { requireNotNull(it) { "Cannot find distribution for $vendor" } }
+
     private fun fetchJvmPackage(
-        it: ToolchainOptions,
+        toolchainOptions: ToolchainOptions,
         target: Target,
+        distribution: DistributionInfo,
     ) = okHttpClient.newCall(
         Request.Builder()
             .header("Accept", "application/json")
@@ -33,12 +74,12 @@ class FooJayClient {
                     .scheme("https")
                     .host("api.foojay.io")
                     .encodedPath("/disco/v3.0/packages")
-                    .addQueryParameter(it.version.versionParam, it.version.versionString)
+                    .addQueryParameter(toolchainOptions.version.versionParam, toolchainOptions.version.versionString)
                     .addQueryParameter("architecture", target.architecture.get().arch)
                     .addQueryParameter("archive_type", "zip")
                     .addQueryParameter("archive_type", "tar.gz")
-                    .addQueryParameter("package_type", "jre")
-                    .addQueryParameter("distribution", it.vendor.fooJayAlias())
+                    .addQueryParameter("archive_type", "tgz")
+                    .addQueryParameter("distribution", distribution.apiParameter)
                     .addQueryParameter("operating_system", target.osName())
                     .addQueryParameter("directly_downloadable", "true")
                     .build()
@@ -52,7 +93,10 @@ class FooJayClient {
                 .fromJson(body.source())
         ) { "Packages deserialization returned null" }
             .result
-            .first()
+            .let { packages ->
+                packages.firstOrNull { it.packageType == "jre" }
+                    ?: packages.first()
+            }
     }
 
     private fun fetchPackageDownloadInfo(jvmPackage: Package) =
@@ -84,7 +128,7 @@ class FooJayClient {
         JvmVendorSpec.IBM_SEMERU -> "Semeru"
         JvmVendorSpec.ORACLE -> "Oracle OpenJDK"
         JvmVendorSpec.SAP -> "SAP Machine"
-        else -> error("Unsupported vendor $this")
+        else -> null
     }
 
     private fun Target.osName() = when (this) {

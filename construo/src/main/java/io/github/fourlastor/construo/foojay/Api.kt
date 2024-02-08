@@ -28,11 +28,32 @@ data class Package(
     @Json(name = "filename")
     val filename: String,
     @Json(name = "links")
-    val links: PackageLink
+    val links: PackageLink,
+    @Json(name = "package_type")
+    val packageType: String
 )
 
 @JsonClass(generateAdapter = true)
 data class PackageLink(
     @Json(name = "pkg_info_uri")
     val packageInfoUri: String
+)
+
+@JsonClass(generateAdapter = true)
+data class DistributionResults(
+    @Json(name = "result")
+    val result: List<DistributionInfo>
+)
+@JsonClass(generateAdapter = true)
+data class DistributionInfo(
+    @Json(name = "name")
+    val name: String,
+    @Json(name = "api_parameter")
+    val apiParameter: String,
+    @Json(name = "build_of_openjdk")
+    val buildOfOpenjdk: Boolean,
+    @Json(name = "build_of_graalvm")
+    val buildOfGraalvm: Boolean,
+    @Json(name = "synonyms")
+    val synonyms: List<String>,
 )
