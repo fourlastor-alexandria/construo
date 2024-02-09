@@ -1,3 +1,6 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
+
 plugins {
     `kotlin-dsl`
     `maven-publish`
@@ -35,6 +38,14 @@ val publishGroup = "io.github.fourlastor"
 
 group = publishGroup
 version = libVersion
+
+kotlin {
+    compilerOptions {
+        languageVersion.set(KotlinVersion.KOTLIN_1_7)
+        apiVersion.set(KotlinVersion.KOTLIN_1_7)
+        jvmTarget.set(JvmTarget.JVM_17)
+    }
+}
 
 gradlePlugin {
     website.set("https://www.github.com/fourlastor-alexandria/construo")
