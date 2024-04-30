@@ -71,7 +71,7 @@ construo {
         // use the main class as the context class loader, defaults to false, useful for compose apps
         useMainAsContextClassLoader.set(true)
         // vm startup options
-        vmOptions.addAll("-Xmx1G")
+        vmArgs.addAll("-Xmx1G")
     }
 }
 ```
@@ -154,6 +154,8 @@ construo {
 ```
 </details>
 
+### Packaging the targets
+
 Each defined target will generate a `packageXXX` task, where `XXX` is the capitalized name of the target (for example: `packageLinuxX64`). Running the task will produce a zip inside the `outputDir` folder containing the fully packaged app.
 
 ### Using foojay instead of JRE URLs
@@ -162,6 +164,8 @@ Construo can figure out the JRE url for a specific build via the [foojay discove
 
 ```kotlin
 import io.github.fourlastor.construo.Target
+import io.github.fourlastor.construo.ToolchainOptions
+import io.github.fourlastor.construo.ToolchainVersion
 
 construo {
     toolchain.set(ToolchainOptions(
