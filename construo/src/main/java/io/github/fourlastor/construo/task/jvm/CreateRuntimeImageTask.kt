@@ -61,7 +61,6 @@ abstract class CreateRuntimeImageTask @Inject constructor(
                 "--no-header-files",
                 "--strip-native-commands",
                 "--no-man-pages",
-                "--compress=1",
                 "--strip-debug",
                 "--add-modules",
                 modulesCommaSeparated,
