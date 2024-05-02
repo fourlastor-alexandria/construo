@@ -67,7 +67,9 @@ sealed interface ToolchainVersion {
     }
 
     companion object {
+        @JvmStatic
         fun of(version: Int) = JdkVersion(version)
+        @JvmStatic
         fun of(version: String) = SpecificVersion(version)
     }
 }
