@@ -162,6 +162,9 @@ Each defined target will generate a `packageXXX` task, where `XXX` is the capita
 
 Construo can figure out the JRE url for a specific build via the [foojay discovery api](https://github.com/foojayio/discoapi). This makes the `jdkUrl` option inside `targets` optional.
 
+<details open>
+<summary>Kotlin DSL</summary>
+
 ```kotlin
 import io.github.fourlastor.construo.Target
 import io.github.fourlastor.construo.ToolchainOptions
@@ -180,5 +183,29 @@ construo {
     }
 }
 ```
+</details>
+
+<details>
+<summary>Groovy DSL</summary>
+
+```groovy
+import io.github.fourlastor.construo.Target
+import io.github.fourlastor.construo.ToolchainOptions
+import io.github.fourlastor.construo.ToolchainVersion
+
+construo {
+    toolchain.set(new ToolchainOptions(
+        ToolchainVersion.of("17.0.9+9.1"),
+        JvmVendorSpec.ADOPTIUM,
+    ))
+    targets {
+        create("linuxX64", Target.Linux) {
+            // no need to specify a jdkUrl
+            architecture.set(Target.Architecture.X86_64)
+        }
+    }
+}
+```
+</details>
 
 `ToolchainVersion.of()` accepts either a string, which must be a specific JRE version for that vendor, or an integer, which must be a major java version number (ie `ToolchainVersion.of(17)`).
