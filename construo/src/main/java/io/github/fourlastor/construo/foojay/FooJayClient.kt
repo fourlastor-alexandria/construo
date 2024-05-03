@@ -93,10 +93,7 @@ class FooJayClient {
                 .fromJson(body.source())
         ) { "Packages deserialization returned null" }
             .result
-            .let { packages ->
-                packages.firstOrNull { it.packageType == "jre" }
-                    ?: packages.first()
-            }
+            .let { packages -> packages.first { it.packageType == "jdk" } }
     }
 
     private fun fetchPackageDownloadInfo(jvmPackage: Package) =
