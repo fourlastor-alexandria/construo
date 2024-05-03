@@ -102,11 +102,11 @@ construo {
     targets {
         create<Target.Linux>("linuxX64") {
             architecture.set(Target.Architecture.X86_64)
-            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.10%2B7/OpenJDK17U-jre_x64_linux_hotspot_17.0.10_7.tar.gz")
+            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.11%2B9/OpenJDK17U-jdk_x64_linux_hotspot_17.0.11_9.tar.gz")
         }
         create<Target.MacOs>("macM1") {
             architecture.set(Target.Architecture.AARCH64)
-            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.10%2B7/OpenJDK17U-jre_aarch64_mac_hotspot_17.0.10_7.tar.gz")
+            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.11%2B9/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.11_9.tar.gz")
             // macOS needs an identifier
             identifier.set("io.github.fourlastor.Game")
             // Optional: icon for macOS
@@ -114,7 +114,7 @@ construo {
         }
         create<Target.Windows>("winX64") {
             architecture.set(Target.Architecture.X86_64)
-            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.10%2B7/OpenJDK17U-jre_x64_windows_hotspot_17.0.10_7.zip")
+            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.11%2B9/OpenJDK17U-jdk_x64_windows_hotspot_17.0.11_9.zip")
             // use executable with GPU hints, defaults to true
             useGpuHint.set(false)
         }
@@ -133,11 +133,11 @@ construo {
     targets.configure {
         create("linuxX64", Target.Linux) {
             architecture.set(Target.Architecture.X86_64)
-            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.10%2B7/OpenJDK17U-jre_x64_linux_hotspot_17.0.10_7.tar.gz")
+            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.11%2B9/OpenJDK17U-jdk_x64_linux_hotspot_17.0.11_9.tar.gz")
         }
         create("macM1", Target.MacOs) {
             architecture.set(Target.Architecture.AARCH64)
-            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.10%2B7/OpenJDK17U-jre_aarch64_mac_hotspot_17.0.10_7.tar.gz")
+            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.11%2B9/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.11_9.tar.gz")
             // macOS needs an identifier
             identifier.set("io.github.fourlastor.Game")
             // Optional: icon for macOS
@@ -145,7 +145,7 @@ construo {
         }
         create("winX64", Target.Windows) {
             architecture.set(Target.Architecture.X86_64)
-            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.10%2B7/OpenJDK17U-jre_x64_windows_hotspot_17.0.10_7.zip")
+            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.11%2B9/OpenJDK17U-jdk_x64_windows_hotspot_17.0.11_9.zip")
             // use executable with GPU hints, defaults to true
             useGpuHint.set(false)
         }
