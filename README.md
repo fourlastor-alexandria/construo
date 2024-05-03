@@ -48,7 +48,7 @@ construo {
 
 ### JLink options
 
-You can add extra modules to the minimized JRE via the `jlink` block.
+You can add extra modules to the minimized JDK via the `jlink` block.
 
 ```kotlin
 construo {
@@ -78,7 +78,7 @@ construo {
 
 ### Defining targets
 
-Targets define the output bundles construo will generate, each target will need to define the architecture, and an optional (if using the [foojay api](#using-foojay-instead-of-jre-urls)) JRE url for that specific target.
+Targets define the output bundles construo will generate, each target will need to define the architecture, and an optional (if using the [foojay api](#using-foojay-instead-of-jdk-urls)) JDK url for that specific target (you cannot use a JRE for cross compilation).
 
 #### Windows
 
@@ -156,9 +156,9 @@ construo {
 
 Each defined target will generate a `packageXXX` task, where `XXX` is the capitalized name of the target (for example: `packageLinuxX64`). Running the task will produce a zip inside the `outputDir` folder containing the fully packaged app.
 
-### Using foojay instead of JRE URLs
+### Using foojay instead of JDK URLs
 
-Construo can figure out the JRE url for a specific build via the [foojay discovery api](https://github.com/foojayio/discoapi). This makes the `jdkUrl` option inside `targets` optional.
+Construo can figure out the JDK url for a specific build via the [foojay discovery api](https://github.com/foojayio/discoapi). This makes the `jdkUrl` option inside `targets` optional.
 
 ```kotlin
 import io.github.fourlastor.construo.Target
@@ -177,4 +177,4 @@ construo {
 }
 ```
 
-`ToolchainVersion.of()` accepts either a string, which must be a specific JRE version for that vendor, or an integer, which must be a major java version number (ie `ToolchainVersion.of(17)`).
+`ToolchainVersion.of()` accepts either a string, which must be a specific JDK version for that vendor, or an integer, which must be a major java version number (ie `ToolchainVersion.of(17)`).
