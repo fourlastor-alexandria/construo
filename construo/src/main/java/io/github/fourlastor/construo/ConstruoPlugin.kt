@@ -128,6 +128,7 @@ class ConstruoPlugin : Plugin<Project> {
                     jarFile.set(jarFileLocation)
                     targetJdkRoot.set(jdkTargetRoot)
                     modules.set(pluginExtension.jlink.modules)
+                    guessModulesFromJar.set(pluginExtension.jlink.guessModulesFromJar)
                     output.set(targetRuntimeImageBuildDir)
                 }
 

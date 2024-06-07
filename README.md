@@ -48,13 +48,15 @@ construo {
 
 ### JLink options
 
-You can add extra modules to the minimized JDK via the `jlink` block.
+You can customize how the minimized image is generated with the `jlink` block.
 
 ```kotlin
 construo {
     jlink {
-        // add extra modules to be included when running jlink
+        // add arbitrary modules to be included when running jlink
         modules.addAll("jdk.zipfs")
+        // guess the modules from the jar using jdeps, defaults to true
+        guessModulesFromJar.set(false)
     }
 }
 ```
