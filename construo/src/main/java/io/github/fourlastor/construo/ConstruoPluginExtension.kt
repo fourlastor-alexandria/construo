@@ -22,7 +22,9 @@ abstract class ConstruoPluginExtension @Inject constructor(
     abstract val jdkRoot: DirectoryProperty
     abstract val mainClass: Property<String>
     val targets: ExtensiblePolymorphicDomainObjectContainer<Target> = objectFactory.polymorphicDomainObjectContainer(Target::class.java)
-    val jlink: JlinkOptions = objectFactory.newInstance(JlinkOptions::class.java)
+    val jlink: JlinkOptions = objectFactory.newInstance(JlinkOptions::class.java).apply {
+        guessModulesFromJar.convention(true)
+    }
     val roast: RoastOptions = objectFactory.newInstance(RoastOptions::class.java)
     abstract val toolchain: Property<ToolchainOptions>
 
@@ -76,6 +78,7 @@ sealed interface ToolchainVersion {
 
 interface JlinkOptions {
     val modules: ListProperty<String>
+    val guessModulesFromJar: Property<Boolean>
 }
 
 interface RoastOptions {

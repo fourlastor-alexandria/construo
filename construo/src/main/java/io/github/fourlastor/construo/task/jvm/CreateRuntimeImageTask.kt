@@ -4,6 +4,7 @@ import io.github.fourlastor.construo.task.BaseTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
@@ -18,7 +19,7 @@ import java.nio.charset.Charset
 import javax.inject.Inject
 
 abstract class CreateRuntimeImageTask @Inject constructor(
-    private val execOperations: ExecOperations
+    private val execOperations: ExecOperations,
 ) : BaseTask() {
 
     @get:InputDirectory
@@ -31,6 +32,9 @@ abstract class CreateRuntimeImageTask @Inject constructor(
     @get:Optional
     @get:Input
     abstract val modules: ListProperty<String>
+
+    @get:Input
+    abstract val guessModulesFromJar: Property<Boolean>
 
     @get:InputFile
     abstract val jarFile: RegularFileProperty
@@ -47,28 +51,43 @@ abstract class CreateRuntimeImageTask @Inject constructor(
         val javaExecName = executableForOs("bin/java")
         val javaHome = jdkRoot.asFile.get().walkTopDown()
             .first { File(it, javaExecName).isFile }
-        val modulesList = (modules.get() + guessModulesFromJar(javaHome)).distinct()
+        val modulesList = if (guessModulesFromJar.get()) {
+            modules.get() + guessModulesFromJar(javaHome)
+        } else {
+            modules.get()
+        }.distinct()
+
         execOperations.exec {
-            val modulesCommaSeparated = modulesList.joinToString(separator = ",")
             val root = if (targetJdkRoot.isPresent) {
                 targetJdkRoot
             } else {
                 jdkRoot
             }.map { it.dir("jmods") }
             val modulesPath = root.get().asFile.absolutePath
-            commandLine(
-                File(javaHome, executableForOs("bin/jlink")).absolutePath,
+            val addModulesArg = if (modulesList.isNotEmpty()) {
+                val modulesCommaSeparated = modulesList.joinToString(separator = ",")
+                arrayOf(
+                    "--add-modules",
+                    modulesCommaSeparated
+                )
+            } else {
+                arrayOf()
+            }
+            val jlinkArgs = arrayOf(
                 "--no-header-files",
                 "--strip-native-commands",
                 "--no-man-pages",
                 "--compress=1",
-                "--strip-debug",
-                "--add-modules",
-                modulesCommaSeparated,
+                "--strip-debug"
+            ) + addModulesArg + arrayOf(
                 "--module-path",
                 modulesPath,
                 "--output",
                 outputFile.absolutePath
+            )
+            commandLine(
+                File(javaHome, executableForOs("bin/jlink")).absolutePath,
+                *jlinkArgs
             )
         }
     }
@@ -85,7 +104,7 @@ abstract class CreateRuntimeImageTask @Inject constructor(
             )
         }
         it.toByteArray().toString(Charset.defaultCharset())
-    }.splitToSequence("\n").map { it.trim() }.toList()
+    }.splitToSequence("\n").map { it.trim() }.filter { it.isNotBlank() }.toList()
 
     private fun executableForOs(executable: String): String = OperatingSystem.current().let { currentOs ->
         if (currentOs.isWindows) {
