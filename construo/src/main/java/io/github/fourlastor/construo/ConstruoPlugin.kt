@@ -113,13 +113,13 @@ class ConstruoPlugin : Plugin<Project> {
 
             val runningJdkRoot = pluginExtension.jdkRoot.orElse(project.layout.dir(project.provider { File(System.getProperty("java.home")) }))
             val jdkTargetRoot = project.layout.dir(unzipJdk.map { it.destinationDir }).findJdkRoot()
-            val jarTask = (tasks.findByName("shadowJar") ?: tasks.findByName("jar")) as Jar
+            val jarTask = pluginExtension.jarTask
+                .map { tasks.getByName(it) as Jar }
+                .orElse (project.provider { (tasks.findByName("shadowJar") ?: tasks.findByName("jar")) as Jar })
 
-            if (!pluginExtension.mainClass.isPresent) {
-                pluginExtension.mainClass.set(jarTask.manifest.attributes["Main-Class"] as String)
-            }
+            val mainClass = pluginExtension.mainClass.orElse(jarTask.map { it.manifest.attributes["Main-Class"] as String })
 
-            val jarFileLocation = jarTask.archiveFile
+            val jarFileLocation = jarTask.flatMap { it.archiveFile }
 
             val createRuntimeImage =
                 tasks.register("createRuntimeImage$capitalized", CreateRuntimeImageTask::class.java) {
@@ -173,7 +173,7 @@ class ConstruoPlugin : Plugin<Project> {
                 dependsOn(unzipRoast)
                 jdkRoot.set(createRuntimeImage.flatMap { it.output })
                 appName.set(pluginExtension.name)
-                mainClassName.set(pluginExtension.mainClass)
+                mainClassName.set(mainClass)
                 jarFile.set(jarFileLocation)
                 vmArgs.set(pluginExtension.roast.vmArgs)
                 useZgc.set(pluginExtension.roast.useZgc)
