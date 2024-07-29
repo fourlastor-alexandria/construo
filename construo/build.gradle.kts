@@ -69,4 +69,5 @@ dependencies {
     implementation(libs.xmlBuilder)
     implementation(libs.shadow)
     implementation(libs.kotlinx.serialization)
+    implementation(libs.guardsquare.proguard)
 }

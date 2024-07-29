@@ -18,6 +18,7 @@ import org.gradle.api.tasks.bundling.Zip
 import org.gradle.configurationcache.extensions.capitalized
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.getByType
+import proguard.gradle.ProGuardTask
 import java.io.File
 
 class ConstruoPlugin : Plugin<Project> {
@@ -113,17 +114,30 @@ class ConstruoPlugin : Plugin<Project> {
 
             val runningJdkRoot = pluginExtension.jdkRoot.orElse(project.layout.dir(project.provider { File(System.getProperty("java.home")) }))
             val jdkTargetRoot = project.layout.dir(unzipJdk.map { it.destinationDir }).findJdkRoot()
-            val jarTask = pluginExtension.jarTask
-                .map { tasks.getByName(it) as Jar }
-                .orElse (project.provider { (tasks.findByName("shadowJar") ?: tasks.findByName("jar")) as Jar })
 
-            val mainClass = pluginExtension.mainClass.orElse(jarTask.map { it.manifest.attributes["Main-Class"] as String })
+            val selectedTask = pluginExtension.jarTask
+                .map { tasks.getByName(it) }
+                .orElse(project.provider { (tasks.findByName("shadowJar") ?: tasks.findByName("jar")) })
 
-            val jarFileLocation = jarTask.flatMap { it.archiveFile }
+            val mainClass = pluginExtension.mainClass.orElse(selectedTask.map {
+                if (it is Jar) {
+                    it.manifest.attributes["Main-Class"] as String
+                } else {
+                    throw IllegalStateException("Setting a custom task which is not a Jar task requires manually setting the mainClass property")
+                }
+            })
+
+            val jarFileLocation = selectedTask.flatMap {
+                when (it) {
+                    is Jar -> it.archiveFile
+                    is ProGuardTask -> project.layout.file(project.provider { it.outJarFileCollection.first() })
+                    else -> throw IllegalStateException("Only supported custom task types are Jar and ProguardTask, it was ${it.javaClass}")
+                }
+            }
 
             val createRuntimeImage =
                 tasks.register("createRuntimeImage$capitalized", CreateRuntimeImageTask::class.java) {
-                    dependsOn(unzipJdk, jarTask)
+                    dependsOn(unzipJdk, selectedTask)
                     jdkRoot.set(runningJdkRoot)
                     jarFile.set(jarFileLocation)
                     targetJdkRoot.set(jdkTargetRoot)

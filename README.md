@@ -158,6 +158,10 @@ construo {
 ```
 </details>
 
+### Using ProGuard
+
+You can set a `ProguardTask` as the `jarTask` name, in that case, you will also have to set `mainClass` to the main class name (see [general config](#general-config)).
+
 ### Packaging the targets
 
 Each defined target will generate a `packageXXX` task, where `XXX` is the capitalized name of the target (for example: `packageLinuxX64`). Running the task will produce a zip inside the `outputDir` folder containing the fully packaged app.
