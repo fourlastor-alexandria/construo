@@ -43,6 +43,8 @@ construo {
     // Optional, defaults to $buildDir/construo/dist
     // where to put the packaged zips
     outputDir.set(rootProject.file("dist"))
+    // Optional, an alternative jar task name to base the build upon
+    jarTask.set("myJarTaskName")
 }
 ```
 

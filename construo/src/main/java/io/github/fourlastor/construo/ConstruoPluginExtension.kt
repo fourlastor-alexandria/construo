@@ -21,6 +21,7 @@ abstract class ConstruoPluginExtension @Inject constructor(
     abstract val outputDir: DirectoryProperty
     abstract val jdkRoot: DirectoryProperty
     abstract val mainClass: Property<String>
+    abstract val jarTask: Property<String>
     val targets: ExtensiblePolymorphicDomainObjectContainer<Target> = objectFactory.polymorphicDomainObjectContainer(Target::class.java)
     val jlink: JlinkOptions = objectFactory.newInstance(JlinkOptions::class.java).apply {
         guessModulesFromJar.convention(true)
