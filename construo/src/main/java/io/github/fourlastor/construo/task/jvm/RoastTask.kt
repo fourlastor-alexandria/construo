@@ -57,7 +57,9 @@ abstract class RoastTask @Inject constructor(
 
         outputDir.mkdirs()
 
-        File(outputDir, "config.json").writer().buffered().use {
+        val configDir = File(outputDir, "app").apply { mkdirs() }
+
+        File(configDir, "${appName.get()}.json").writer().buffered().use {
             it.write(
                 Json.encodeToString(
                     PackConfig(
@@ -89,7 +91,7 @@ abstract class RoastTask @Inject constructor(
 
         fileSystemOperations.copy {
             from(jdkRoot)
-            into(output.dir("jdk"))
+            into(output.dir("runtime"))
         }
 
         fileSystemOperations.copy {
