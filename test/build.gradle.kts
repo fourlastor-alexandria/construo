@@ -42,13 +42,10 @@ application {
 construo {
     name.set("game")
     humanName.set("Game")
-    toolchain.set(ToolchainOptions(
-        ToolchainVersion.of("17.0.9+9.1"),
-        JvmVendorSpec.ADOPTIUM,
-    ))
     targets {
         create<Target.Linux>("linuxX64") {
             architecture.set(Target.Architecture.X86_64)
+            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.9%2B9/OpenJDK17U-jdk_x64_linux_hotspot_17.0.9_9.tar.gz")
         }
         create<Target.MacOs>("macX64") {
             architecture.set(Target.Architecture.X86_64)
