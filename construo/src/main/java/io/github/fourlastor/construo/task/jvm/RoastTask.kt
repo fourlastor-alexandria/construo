@@ -33,6 +33,9 @@ abstract class RoastTask @Inject constructor(
     @get:InputFile
     abstract val roastExe: RegularFileProperty
 
+    @get:Input
+    abstract val roastExeName: Property<String>
+
     @get:InputFile
     abstract val jarFile: RegularFileProperty
 
@@ -75,17 +78,7 @@ abstract class RoastTask @Inject constructor(
 
         fileSystemOperations.copy {
             from(roastExe)
-            rename {
-                appName.flatMap { name ->
-                    roastExe.map {
-                        if (it.asFile.extension.isEmpty()) {
-                            name
-                        } else {
-                            "$name.exe"
-                        }
-                    }
-                }.get()
-            }
+            rename { roastExeName.get() }
             into(output)
         }
 
