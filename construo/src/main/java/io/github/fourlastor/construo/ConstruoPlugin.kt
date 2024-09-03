@@ -244,13 +244,14 @@ class ConstruoPlugin : Plugin<Project> {
                             plist.set(pListFile)
                         }
 
-                    tasks.register("package$capitalized", Zip::class.java) {
+                    tasks.register("package$capitalized", PackageTask::class.java) {
                         group = GROUP_NAME
                         archiveFileName.set(targetArchiveFileName)
                         destinationDirectory.set(pluginExtension.outputDir)
                         dependsOn(buildMacAppBundle)
-                        from(macAppDir)
-                        into(packageDestination.flatMap { destination -> pluginExtension.humanName.map { "$destination/$it.app" } })
+                        from.set(macAppDir)
+                        into.set(packageDestination.flatMap { destination -> pluginExtension.humanName.map { "$destination/$it.app" } })
+                        executable.set(macAppDir.flatMap { it.dir("Contents").dir("MacOS").file(targetRoastExeName) })
                     }
                 }
             }
