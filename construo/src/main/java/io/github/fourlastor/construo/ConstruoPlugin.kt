@@ -3,6 +3,7 @@ package io.github.fourlastor.construo
 import de.undercouch.gradle.tasks.download.Download
 import de.undercouch.gradle.tasks.download.DownloadTaskPlugin
 import io.github.fourlastor.construo.foojay.FooJayClient
+import io.github.fourlastor.construo.task.PackageTask
 import io.github.fourlastor.construo.task.jvm.CreateRuntimeImageTask
 import io.github.fourlastor.construo.task.jvm.RoastTask
 import io.github.fourlastor.construo.task.macos.BuildMacAppBundle
@@ -183,6 +184,16 @@ class ConstruoPlugin : Plugin<Project> {
                 into(targetRoastExeDir)
             }
 
+            val targetRoastExeName = pluginExtension.name.flatMap { name ->
+                targetRoastExeDir.map { it.file("roast-${target.roastName()}") }.map {
+                    if (it.asFile.extension.isEmpty()) {
+                        name
+                    } else {
+                        "$name.exe"
+                    }
+                }
+            }
+
             val packageRoast = tasks.register("roast$capitalized", RoastTask::class.java) {
                 dependsOn(unzipRoast)
                 jdkRoot.set(createRuntimeImage.flatMap { it.output })
@@ -194,17 +205,19 @@ class ConstruoPlugin : Plugin<Project> {
                 useMainAsContextClassLoader.set(pluginExtension.roast.useMainAsContextClassLoader)
                 output.set(targetRoastDir)
                 roastExe.set(targetRoastExeDir.map { it.file("roast-${target.roastName()}") })
+                roastExeName.set(targetRoastExeName)
             }
 
             when (target) {
                 is Target.Linux, is Target.Windows -> {
-                    tasks.register("package$capitalized", Zip::class.java) {
+                    tasks.register("package$capitalized", PackageTask::class.java) {
                         group = GROUP_NAME
                         dependsOn(packageRoast)
                         archiveFileName.set(targetArchiveFileName)
                         destinationDirectory.set(pluginExtension.outputDir)
-                        from(targetRoastDir)
-                        into(packageDestination)
+                        from.set(targetRoastDir)
+                        into.set(packageDestination)
+                        executable.set(targetRoastDir.flatMap { it.file(targetRoastExeName) })
                     }
                 }
 
@@ -231,13 +244,14 @@ class ConstruoPlugin : Plugin<Project> {
                             plist.set(pListFile)
                         }
 
-                    tasks.register("package$capitalized", Zip::class.java) {
+                    tasks.register("package$capitalized", PackageTask::class.java) {
                         group = GROUP_NAME
                         archiveFileName.set(targetArchiveFileName)
                         destinationDirectory.set(pluginExtension.outputDir)
                         dependsOn(buildMacAppBundle)
-                        from(macAppDir)
-                        into(packageDestination.flatMap { destination -> pluginExtension.humanName.map { "$destination/$it.app" } })
+                        from.set(macAppDir)
+                        into.set(packageDestination.flatMap { destination -> pluginExtension.humanName.map { "$destination/$it.app" } })
+                        executable.set(macAppDir.flatMap { it.dir("Contents").dir("MacOS").file(targetRoastExeName) })
                     }
                 }
             }
