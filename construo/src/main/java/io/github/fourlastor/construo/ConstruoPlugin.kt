@@ -172,7 +172,7 @@ class ConstruoPlugin : Plugin<Project> {
 
             val downloadRoast = tasks.register("downloadRoast$capitalized", Download::class.java) {
                 group = GROUP_NAME
-                src("https://github.com/fourlastor-alexandria/roast/releases/download/v1.0.0/roast-${target.roastName()}.zip")
+                src("https://github.com/fourlastor-alexandria/roast/releases/download/v1.1.0/roast-${target.roastName()}.zip")
                 dest(roastZipDir)
                 overwrite(false)
             }
