@@ -11,6 +11,7 @@ import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
+import java.io.File
 
 abstract class PackageTask: BaseTask() {
 
@@ -33,7 +34,7 @@ abstract class PackageTask: BaseTask() {
         ZipArchiveOutputStream(destination.outputStream().buffered()).use { zipOutStream ->
             val inputDir = from.get().asFile
             inputDir.walkTopDown().forEach { inputFile ->
-                val entry = ZipArchiveEntry(inputFile, "$baseDir/${inputFile.toRelativeString(inputDir)}")
+                val entry = ZipArchiveEntry(inputFile, "$baseDir/${inputFile.toRelativeString(inputDir)}".replace('/', File.separatorChar))
                 if (inputFile.absolutePath == executableFile.absolutePath) {
                     entry.unixMode = "764".toInt(radix = 8)
                 }
