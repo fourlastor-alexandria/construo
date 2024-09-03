@@ -24,6 +24,12 @@ jobs:
         working-directory: ./construo
       - name: Build test project
         run: ./gradlew test:packageLinuxX64 test:packageMacM1 test:packageMacX64 test:packageWinX64
+      - name: Artifact upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: outputs-${{ matrix.os }}
+          path: test/build/construo/dist
+          retention-days: 1
   check-format:
     runs-on: ubuntu-latest
     steps:
