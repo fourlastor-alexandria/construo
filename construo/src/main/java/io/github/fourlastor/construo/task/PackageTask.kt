@@ -34,7 +34,7 @@ abstract class PackageTask: BaseTask() {
         ZipArchiveOutputStream(destination.outputStream().buffered()).use { zipOutStream ->
             val inputDir = from.get().asFile
             inputDir.walkTopDown().forEach { inputFile ->
-                val entry = ZipArchiveEntry(inputFile, "$baseDir/${inputFile.toRelativeString(inputDir)}".replace('/', File.separatorChar))
+                val entry = ZipArchiveEntry(inputFile, "$baseDir/${inputFile.toRelativeString(inputDir)}".replace(File.separatorChar, '/'))
                 if (inputFile.absolutePath == executableFile.absolutePath) {
                     entry.unixMode = "764".toInt(radix = 8)
                 }
