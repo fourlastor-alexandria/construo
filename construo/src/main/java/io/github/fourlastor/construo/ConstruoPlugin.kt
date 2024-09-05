@@ -1,8 +1,7 @@
 package io.github.fourlastor.construo
 
-import de.undercouch.gradle.tasks.download.Download
-import de.undercouch.gradle.tasks.download.DownloadTaskPlugin
 import io.github.fourlastor.construo.foojay.FooJayClient
+import io.github.fourlastor.construo.task.DownloadTask
 import io.github.fourlastor.construo.task.PackageTask
 import io.github.fourlastor.construo.task.jvm.CreateRuntimeImageTask
 import io.github.fourlastor.construo.task.jvm.RoastTask
@@ -15,7 +14,6 @@ import org.gradle.api.plugins.ApplicationPlugin
 import org.gradle.api.plugins.JavaApplication
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Copy
-import org.gradle.api.tasks.bundling.Zip
 import org.gradle.configurationcache.extensions.capitalized
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.getByType
@@ -32,7 +30,6 @@ class ConstruoPlugin : Plugin<Project> {
     )
 
     override fun apply(project: Project) {
-        project.plugins.apply(DownloadTaskPlugin::class.java)
         val pluginExtension = project.extensions.create("construo", ConstruoPluginExtension::class.java)
         val tasks = project.tasks
         val baseBuildDir = project.layout.buildDirectory.dir("construo")
@@ -64,7 +61,7 @@ class ConstruoPlugin : Plugin<Project> {
                 pluginExtension.version.map { version -> "$name-$version-${target.name}" }
             }
 
-            val url = target.jdkUrl.map {
+            val jdkUrl = target.jdkUrl.map {
                 val extension = if (it.endsWith(".zip")) "zip" else "tar.gz"
                 DownloadJdkOptions(
                     url = it,
@@ -80,27 +77,26 @@ class ConstruoPlugin : Plugin<Project> {
                 }
             )
 
-            val downloadJdk = tasks.register("downloadJdk$capitalized", Download::class.java) {
+            val jdkDest = jdkUrl.flatMap { url ->
+                val extension = if (url.filename.endsWith(".zip")) "zip" else "tar.gz"
+                jdkDir.map { it.file("${target.name}.$extension") }
+            }
+
+            val downloadJdk = tasks.register("downloadJdk$capitalized", DownloadTask::class.java) {
                 group = GROUP_NAME
-                src(listOf(url.map { it.url }))
-                dest(
-                    url.flatMap { url ->
-                        val extension = if (url.filename.endsWith(".zip")) "zip" else "tar.gz"
-                        jdkDir.map { it.file("${target.name}.$extension") }
-                    }
-                )
-                overwrite(false)
+                src.set(jdkUrl.map { it.url })
+                dest.set(jdkDest)
             }
             val targetJdkDir = jdkDir.map { it.dir(target.name) }
             val unzipJdk = tasks.register("unzipJdk$capitalized", Copy::class.java) {
                 group = GROUP_NAME
                 dependsOn(downloadJdk)
                 from(
-                    downloadJdk.map {
-                        if (it.dest.extension == "zip") {
-                            project.zipTree(it.dest)
+                    jdkDest.map {
+                        if (it.asFile.extension  == "zip") {
+                            project.zipTree(it)
                         } else {
-                            project.tarTree(it.dest)
+                            project.tarTree(it)
                         }
                     }
                 ) {
@@ -170,11 +166,10 @@ class ConstruoPlugin : Plugin<Project> {
                 else -> error("Unsupported target.")
             }
 
-            val downloadRoast = tasks.register("downloadRoast$capitalized", Download::class.java) {
+            val downloadRoast = tasks.register("downloadRoast$capitalized", DownloadTask::class.java) {
                 group = GROUP_NAME
-                src("https://github.com/fourlastor-alexandria/roast/releases/download/v1.1.0/roast-${target.roastName()}.zip")
-                dest(roastZipDir)
-                overwrite(false)
+                src.set("https://github.com/fourlastor-alexandria/roast/releases/download/v1.1.0/roast-${target.roastName()}.zip")
+                dest.set(roastZipDir.map { it.file("roast-${target.roastName()}.zip") })
             }
             val targetRoastExeDir = baseRoastExeDir.map { it.dir(target.name) }
             val unzipRoast = tasks.register("unzipRoast$capitalized", Copy::class.java) {
