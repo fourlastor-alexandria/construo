@@ -63,7 +63,6 @@ gradlePlugin {
 
 dependencies {
     implementation(libs.apache.commons.compress)
-    implementation(libs.download)
     implementation(libs.square.moshi.core)
     ksp(libs.square.moshi.codegen)
     implementation(libs.square.okhttp)
