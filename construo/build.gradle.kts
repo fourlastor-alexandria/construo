@@ -6,7 +6,6 @@ plugins {
     `maven-publish`
     alias(libs.plugins.jetbrains.kotlin.jvm)
     alias(libs.plugins.jetbrains.kotlin.serialization)
-    alias(libs.plugins.google.ksp)
     alias(libs.plugins.plugin.publish)
     alias(libs.plugins.spotless)
 }
@@ -63,8 +62,6 @@ gradlePlugin {
 
 dependencies {
     implementation(libs.apache.commons.compress)
-    implementation(libs.square.moshi.core)
-    ksp(libs.square.moshi.codegen)
     implementation(libs.square.okhttp)
     implementation(libs.xmlBuilder)
     implementation(libs.shadow)
