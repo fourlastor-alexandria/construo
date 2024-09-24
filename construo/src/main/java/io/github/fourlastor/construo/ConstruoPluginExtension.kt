@@ -27,7 +27,6 @@ abstract class ConstruoPluginExtension @Inject constructor(
         guessModulesFromJar.convention(true)
     }
     val roast: RoastOptions = objectFactory.newInstance(RoastOptions::class.java)
-    abstract val toolchain: Property<ToolchainOptions>
 
     init {
         targets.registerBinding(Target.Linux::class.java, Target.Linux::class.java)
@@ -41,39 +40,6 @@ abstract class ConstruoPluginExtension @Inject constructor(
 
     fun roast(action: Action<in RoastOptions>) {
         action.execute(roast)
-    }
-}
-
-data class ToolchainOptions(
-    val version: ToolchainVersion,
-    val vendor: JvmVendorSpec
-)
-
-sealed interface ToolchainVersion {
-
-    val versionParam: String
-    val versionString: String
-
-    data class JdkVersion(val version: Int) : ToolchainVersion {
-
-        override val versionParam: String
-            get() = "jdk_version"
-
-        override val versionString: String
-            get() = version.toString()
-    }
-
-    data class SpecificVersion(override val versionString: String) : ToolchainVersion {
-
-        override val versionParam: String
-            get() = "version"
-    }
-
-    companion object {
-        @JvmStatic
-        fun of(version: Int) = JdkVersion(version)
-        @JvmStatic
-        fun of(version: String) = SpecificVersion(version)
     }
 }
 

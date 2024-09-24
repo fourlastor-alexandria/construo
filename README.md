@@ -82,7 +82,7 @@ construo {
 
 ### Defining targets
 
-Targets define the output bundles construo will generate, each target will need to define the architecture, and an optional (if using the [foojay api](#using-foojay-instead-of-jdk-urls)) JDK url for that specific target (you cannot use a JRE for cross compilation).
+Targets define the output bundles construo will generate, each target will need to define the architecture, and a JDK url for that specific target (you cannot use a JRE for cross compilation).
 
 #### Windows
 
@@ -165,55 +165,3 @@ You can set a `ProguardTask` as the `jarTask` name, in that case, you will also 
 ### Packaging the targets
 
 Each defined target will generate a `packageXXX` task, where `XXX` is the capitalized name of the target (for example: `packageLinuxX64`). Running the task will produce a zip inside the `outputDir` folder containing the fully packaged app.
-
-### Using foojay instead of JDK URLs
-
-Construo can figure out the JDK url for a specific build via the [foojay discovery api](https://github.com/foojayio/discoapi). This makes the `jdkUrl` option inside `targets` optional.
-
-<details open>
-<summary>Kotlin DSL</summary>
-
-```kotlin
-import io.github.fourlastor.construo.Target
-import io.github.fourlastor.construo.ToolchainOptions
-import io.github.fourlastor.construo.ToolchainVersion
-
-construo {
-    toolchain.set(ToolchainOptions(
-        ToolchainVersion.of("17.0.9+9.1"),
-        JvmVendorSpec.ADOPTIUM,
-    ))
-    targets {
-        create<Target.Linux>("linuxX64") {
-            // no need to specify a jdkUrl
-            architecture.set(Target.Architecture.X86_64)
-        }
-    }
-}
-```
-</details>
-
-<details>
-<summary>Groovy DSL</summary>
-
-```groovy
-import io.github.fourlastor.construo.Target
-import io.github.fourlastor.construo.ToolchainOptions
-import io.github.fourlastor.construo.ToolchainVersion
-
-construo {
-    toolchain.set(new ToolchainOptions(
-        ToolchainVersion.of("17.0.9+9.1"),
-        JvmVendorSpec.ADOPTIUM,
-    ))
-    targets {
-        create("linuxX64", Target.Linux) {
-            // no need to specify a jdkUrl
-            architecture.set(Target.Architecture.X86_64)
-        }
-    }
-}
-```
-</details>
-
-`ToolchainVersion.of()` accepts either a string, which must be a specific JDK version for that vendor, or an integer, which must be a major java version number (ie `ToolchainVersion.of(17)`).

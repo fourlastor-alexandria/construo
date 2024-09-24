@@ -1,6 +1,5 @@
 package io.github.fourlastor.construo
 
-import io.github.fourlastor.construo.foojay.FooJayClient
 import io.github.fourlastor.construo.task.DownloadTask
 import io.github.fourlastor.construo.task.PackageTask
 import io.github.fourlastor.construo.task.jvm.CreateRuntimeImageTask
@@ -21,8 +20,6 @@ import proguard.gradle.ProGuardTask
 import java.io.File
 
 class ConstruoPlugin : Plugin<Project> {
-
-    private val fooJayClient = FooJayClient()
 
     private data class DownloadJdkOptions(
         val url: String,
@@ -67,15 +64,7 @@ class ConstruoPlugin : Plugin<Project> {
                     url = it,
                     filename = "${target.name}.$extension"
                 )
-            }.orElse(
-                pluginExtension.toolchain.map {
-                    val packageInfo = fooJayClient.getPackageInfo(it, target)
-                    DownloadJdkOptions(
-                        url = packageInfo.directDownloadUri,
-                        filename = packageInfo.filename
-                    )
-                }
-            )
+            }
 
             val jdkDest = jdkUrl.flatMap { url ->
                 val extension = if (url.filename.endsWith(".zip")) "zip" else "tar.gz"

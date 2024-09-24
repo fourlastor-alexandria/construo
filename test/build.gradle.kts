@@ -1,6 +1,4 @@
 import io.github.fourlastor.construo.Target
-import io.github.fourlastor.construo.ToolchainOptions
-import io.github.fourlastor.construo.ToolchainVersion
 
 buildscript {
     repositories {
