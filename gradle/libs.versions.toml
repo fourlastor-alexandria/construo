@@ -6,7 +6,7 @@ jetbrains-kotlin = "1.9.10"
 kotlinx-serialization = "1.4.0"
 okhttp = "4.12.0"
 plugin-publish = "1.2.1"
-shadow = "8.3.0"
+shadow = "8.3.3"
 spotless = "6.10.0"
 xmlBuilder = "1.9.0"
 [libraries]
@@ -23,4 +23,5 @@ xmlBuilder = { module = "org.redundent:kotlin-xml-builder", version.ref = "xmlBu
 jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "jetbrains-kotlin" }
 jetbrains-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "jetbrains-kotlin" }
 plugin-publish = { id = "com.gradle.plugin-publish", version.ref = "plugin-publish"}
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
