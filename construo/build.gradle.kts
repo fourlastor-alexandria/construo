@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.jvm)
     alias(libs.plugins.jetbrains.kotlin.serialization)
     alias(libs.plugins.plugin.publish)
+    alias(libs.plugins.shadow)
     alias(libs.plugins.spotless)
 }
 
@@ -30,6 +31,11 @@ java {
 
 base {
     archivesName = "construo"
+}
+
+tasks.shadowJar {
+    archiveClassifier.set("")
+    relocate("org.apache", "construo.apache")
 }
 
 val libVersion: String by project
@@ -62,9 +68,9 @@ gradlePlugin {
 
 dependencies {
     implementation(libs.apache.commons.compress)
-    implementation(libs.square.okhttp)
-    implementation(libs.xmlBuilder)
-    implementation(libs.shadow)
-    implementation(libs.kotlinx.serialization)
-    implementation(libs.guardsquare.proguard)
+    shadow(libs.square.okhttp)
+    shadow(libs.xmlBuilder)
+    shadow(libs.shadow)
+    shadow(libs.kotlinx.serialization)
+    shadow(libs.guardsquare.proguard)
 }
