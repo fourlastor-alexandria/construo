@@ -68,9 +68,9 @@ gradlePlugin {
 
 dependencies {
     implementation(libs.apache.commons.compress)
-    shadow(libs.square.okhttp)
-    shadow(libs.xmlBuilder)
-    shadow(libs.shadow)
-    shadow(libs.kotlinx.serialization)
-    shadow(libs.guardsquare.proguard)
+    implementation(libs.square.okhttp)
+    implementation(libs.xmlBuilder)
+    implementation(libs.shadow)
+    implementation(libs.kotlinx.serialization)
+    implementation(libs.guardsquare.proguard)
 }
