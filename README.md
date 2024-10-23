@@ -90,6 +90,8 @@ Windows targets support only the X86_64 architecture.
 
 The `useGpuHint` option specifies whether the packaged app will use the discrete GPU in hybrid systems (defaults to `true`).
 
+The `useConsole` option specifies whether the packaged app will print output to a terminal (defaults to `false`). Note that `useConsole` overrides `useGpuHint`.
+
 #### Macos
 
 The `identifier` option is mandatory.
