@@ -159,7 +159,7 @@ class ConstruoPlugin : Plugin<Project> {
 
             val downloadRoast = tasks.register("downloadRoast$capitalized", DownloadTask::class.java) {
                 group = GROUP_NAME
-                src.set("https://github.com/fourlastor-alexandria/roast/releases/download/v1.1.0/roast-${target.roastName()}.zip")
+                src.set("https://github.com/fourlastor-alexandria/roast/releases/download/v1.2.0/roast-${target.roastName()}.zip")
                 dest.set(roastZipDir.map { it.file("roast-${target.roastName()}.zip") })
             }
             val targetRoastExeDir = baseRoastExeDir.map { it.dir(target.name) }
