@@ -52,7 +52,7 @@ class ConstruoPlugin : Plugin<Project> {
             val targetBuildDir = baseBuildDir.map { it.dir(target.name) }
             val targetRuntimeImageBuildDir = baseRuntimeImageBuildDir.map { it.dir("${project.name}-${target.name}") }
 
-            val capitalized = target.name.capitalized()
+            val capitalized = target.name.replaceFirstChar(Char::uppercase)
             val targetArchiveFileName = pluginExtension.name.map { "$it-${target.name}.zip" }
             val packageDestination = pluginExtension.name.flatMap { name ->
                 pluginExtension.version.map { version -> "$name-$version-${target.name}" }
