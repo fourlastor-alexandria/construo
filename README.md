@@ -59,6 +59,8 @@ construo {
         modules.addAll("jdk.zipfs")
         // guess the modules from the jar using jdeps, defaults to true
         guessModulesFromJar.set(false)
+        // include default crypto modules, defaults to true
+        includeDefaultCryptoModules.set(false)
     }
 }
 ```

@@ -36,6 +36,9 @@ abstract class CreateRuntimeImageTask @Inject constructor(
     @get:Input
     abstract val guessModulesFromJar: Property<Boolean>
 
+    @get:Input
+    abstract val includeDefaultCryptoModules: Property<Boolean>
+
     @get:InputFile
     abstract val jarFile: RegularFileProperty
 
@@ -51,11 +54,21 @@ abstract class CreateRuntimeImageTask @Inject constructor(
         val javaExecName = executableForOs("bin/java")
         val javaHome = jdkRoot.asFile.get().walkTopDown()
             .first { File(it, javaExecName).isFile }
-        val modulesList = if (guessModulesFromJar.get()) {
-            modules.get() + guessModulesFromJar(javaHome)
+        val modulesFromJar = if (guessModulesFromJar.get()) {
+            guessModulesFromJar(javaHome)
         } else {
-            modules.get()
-        }.distinct()
+            emptyList()
+        }
+        val defaultCryptoModules = if (includeDefaultCryptoModules.get()) {
+            listOf("jdk.crypto.ec")
+        } else {
+            emptyList()
+        }
+        val modulesList = (
+                modules.getOrElse(emptyList())
+                + modulesFromJar
+                + defaultCryptoModules
+        ).distinct()
 
         execOperations.exec {
             val root = if (targetJdkRoot.isPresent) {
