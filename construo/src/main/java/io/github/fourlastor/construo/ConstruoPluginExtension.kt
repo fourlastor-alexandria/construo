@@ -8,7 +8,6 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
-import org.gradle.jvm.toolchain.JvmVendorSpec
 import javax.inject.Inject
 
 abstract class ConstruoPluginExtension @Inject constructor(
