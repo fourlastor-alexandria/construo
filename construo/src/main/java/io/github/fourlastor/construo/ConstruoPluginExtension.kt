@@ -26,7 +26,11 @@ abstract class ConstruoPluginExtension @Inject constructor(
         guessModulesFromJar.convention(true)
         includeDefaultCryptoModules.convention(true)
     }
-    val roast: RoastOptions = objectFactory.newInstance(RoastOptions::class.java)
+    val roast: RoastOptions = objectFactory.newInstance(RoastOptions::class.java).apply {
+        runOnFirstThread.convention(true)
+        useZgc.convention(true)
+        useMainAsContextClassLoader.convention(false)
+    }
 
     init {
         targets.registerBinding(Target.Linux::class.java, Target.Linux::class.java)
@@ -50,9 +54,10 @@ interface JlinkOptions {
 }
 
 interface RoastOptions {
-    val vmArgs: ListProperty<String>
+    val runOnFirstThread: Property<Boolean>
     val useZgc: Property<Boolean>
     val useMainAsContextClassLoader: Property<Boolean>
+    val vmArgs: ListProperty<String>
 }
 
 interface Target : Named {

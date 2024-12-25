@@ -72,6 +72,8 @@ Construo uses [roast](https://github.com/fourlastor-alexandria/roast/) to run th
 ```kotlin
 construo {
     roast {
+        // MacOS only, whether to run the jvm on the main thread, defaults to true
+        runOnFirstThread.set(false)
         // use ZGC garbage collector, defaults to true
         useZgc.set(false)
         // use the main class as the context class loader, defaults to false, useful for compose apps
