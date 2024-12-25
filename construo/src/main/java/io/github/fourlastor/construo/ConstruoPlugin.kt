@@ -13,7 +13,6 @@ import org.gradle.api.plugins.ApplicationPlugin
 import org.gradle.api.plugins.JavaApplication
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Copy
-import org.gradle.configurationcache.extensions.capitalized
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.getByType
 import proguard.gradle.ProGuardTask
@@ -38,8 +37,6 @@ class ConstruoPlugin : Plugin<Project> {
             pluginExtension.version.convention(project.version.toString())
         }
         pluginExtension.outputDir.convention(baseBuildDir.map { it.dir("dist") })
-        pluginExtension.roast.useZgc.convention(true)
-        pluginExtension.roast.useMainAsContextClassLoader.convention(false)
 
         project.plugins.withType(ApplicationPlugin::class.java) {
             val javaApplication = project.extensions.getByType<JavaApplication>()
@@ -160,7 +157,7 @@ class ConstruoPlugin : Plugin<Project> {
 
             val downloadRoast = tasks.register("downloadRoast$capitalized", DownloadTask::class.java) {
                 group = GROUP_NAME
-                src.set("https://github.com/fourlastor-alexandria/roast/releases/download/v1.2.0/roast-${target.roastName()}.zip")
+                src.set("https://github.com/fourlastor-alexandria/roast/releases/download/v1.3.0/roast-${target.roastName()}.zip")
                 dest.set(roastZipDir.map { it.file("roast-${target.roastName()}.zip") })
             }
             val targetRoastExeDir = baseRoastExeDir.map { it.dir(target.name) }
@@ -189,6 +186,7 @@ class ConstruoPlugin : Plugin<Project> {
                 jarFile.set(jarFileLocation)
                 vmArgs.set(pluginExtension.roast.vmArgs)
                 useZgc.set(pluginExtension.roast.useZgc)
+                runOnFirstThread.set(pluginExtension.roast.runOnFirstThread)
                 useMainAsContextClassLoader.set(pluginExtension.roast.useMainAsContextClassLoader)
                 output.set(targetRoastDir)
                 roastExe.set(targetRoastExeDir.map { it.file("roast-${target.roastName()}") })

@@ -40,6 +40,9 @@ abstract class RoastTask @Inject constructor(
     abstract val jarFile: RegularFileProperty
 
     @get:Input
+    abstract val runOnFirstThread: Property<Boolean>
+
+    @get:Input
     abstract val vmArgs: ListProperty<String>
 
     @get:Input
@@ -68,6 +71,7 @@ abstract class RoastTask @Inject constructor(
                     PackConfig(
                         listOf(jarFile.get().asFile.name),
                         mainClass = mainClassName.get(),
+                        runOnFirstThread = runOnFirstThread.get(),
                         vmArgs = vmArgs.get(),
                         useZgcIfSupportedOs = useZgc.get(),
                         useMainAsContextClassLoader = useMainAsContextClassLoader.get()
@@ -97,6 +101,7 @@ abstract class RoastTask @Inject constructor(
     private data class PackConfig(
         val classPath: List<String>,
         val mainClass: String,
+        val runOnFirstThread: Boolean,
         val useZgcIfSupportedOs: Boolean,
         val useMainAsContextClassLoader: Boolean,
         val vmArgs: List<String>
