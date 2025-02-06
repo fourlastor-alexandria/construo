@@ -35,7 +35,7 @@ base {
 
 tasks.shadowJar {
     archiveClassifier.set("")
-    relocate("org.apache", "construo.apache")
+    relocate("org.apache.commons", "construo.apache.commons")
 }
 
 val libVersion: String by project
