@@ -73,4 +73,5 @@ dependencies {
     implementation(libs.shadow)
     implementation(libs.kotlinx.serialization)
     implementation(libs.guardsquare.proguard)
+    implementation(libs.gdx.jnigen.loader)
 }

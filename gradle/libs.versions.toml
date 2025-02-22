@@ -1,6 +1,7 @@
 [versions]
 apache-commons-compress = "1.27.1"
 gdx = "1.11.0"
+gdx-jnigen-loader = "2.5.2"
 guardsquare-proguard = "7.5.0"
 jetbrains-kotlin = "1.9.10"
 kotlinx-serialization = "1.4.0"
@@ -14,6 +15,7 @@ apache-commons-compress = { module = "org.apache.commons:commons-compress", vers
 gdx-core = { module = "com.badlogicgames.gdx:gdx", version.ref = "gdx" }
 gdx-platform = { module = "com.badlogicgames.gdx:gdx-platform", version.ref = "gdx" }
 gdx-backend-lwjgl3 = { module = "com.badlogicgames.gdx:gdx-backend-lwjgl3", version.ref = "gdx" }
+gdx-jnigen-loader = { module = "com.badlogicgames.gdx:gdx-jnigen-loader", version.ref = "gdx-jnigen-loader"}
 guardsquare-proguard = { module = "com.guardsquare:proguard-gradle", version.ref = "guardsquare-proguard" }
 kotlinx-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization"}
 square-okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp"}
