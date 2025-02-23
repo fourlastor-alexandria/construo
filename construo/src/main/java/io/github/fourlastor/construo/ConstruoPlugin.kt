@@ -134,13 +134,16 @@ class ConstruoPlugin : Plugin<Project> {
 
             fun Target.roastName(): String = when (this) {
                 is Target.Windows -> {
-                    check(architecture.get() == Target.Architecture.X86_64) { "Only Windows 64 bit is supported" }
+                    val architectureSuffix = when (architecture.get()) {
+                        Target.Architecture.X86_64 -> "x86_64"
+                        Target.Architecture.AARCH64 -> "aarch64"
+                    }
                     if (useConsole.getOrElse(false)) {
-                        "win-console-64.exe"
+                        "win-console-$architectureSuffix.exe"
                     } else if (useGpuHint.getOrElse(true)) {
-                        "win-64.exe"
+                        "win-$architectureSuffix.exe"
                     } else {
-                        "win-no-gpu-64.exe"
+                        "win-no-gpu-$architectureSuffix.exe"
                     }
                 }
 
@@ -157,9 +160,10 @@ class ConstruoPlugin : Plugin<Project> {
                 else -> error("Unsupported target.")
             }
 
+            val roastVersion = "v1.4.0"
             val downloadRoast = tasks.register("downloadRoast$capitalized", DownloadTask::class.java) {
                 group = GROUP_NAME
-                src.set("https://github.com/fourlastor-alexandria/roast/releases/download/v1.3.0/roast-${target.roastName()}.zip")
+                src.set("https://github.com/fourlastor-alexandria/roast/releases/download/$roastVersion/roast-${target.roastName()}.zip")
                 dest.set(roastZipDir.map { it.file("roast-${target.roastName()}.zip") })
             }
             val targetRoastExeDir = baseRoastExeDir.map { it.dir(target.name) }
