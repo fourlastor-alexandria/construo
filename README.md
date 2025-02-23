@@ -96,6 +96,8 @@ The `useGpuHint` option specifies whether the packaged app will use the discrete
 
 The `useConsole` option specifies whether the packaged app will print output to a terminal (defaults to `false`). Note that `useConsole` overrides `useGpuHint`.
 
+The `icon` option specifies an icon to be used for the executable, this must be a PNG image.
+
 #### Macos
 
 The `identifier` option is mandatory.
