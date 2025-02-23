@@ -73,6 +73,7 @@ interface Target : Named {
     interface Windows : Target {
         val useGpuHint: Property<Boolean>
         val useConsole: Property<Boolean>
+        val icon: RegularFileProperty
     }
     enum class Architecture(val arch: String) {
         X86_64("x64"),

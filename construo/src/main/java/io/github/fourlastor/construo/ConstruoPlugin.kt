@@ -6,6 +6,7 @@ import io.github.fourlastor.construo.task.jvm.CreateRuntimeImageTask
 import io.github.fourlastor.construo.task.jvm.RoastTask
 import io.github.fourlastor.construo.task.macos.BuildMacAppBundle
 import io.github.fourlastor.construo.task.macos.GeneratePlist
+import io.github.fourlastor.construo.task.windows.ReplaceWinIconTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.file.Directory
@@ -13,6 +14,7 @@ import org.gradle.api.plugins.ApplicationPlugin
 import org.gradle.api.plugins.JavaApplication
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Copy
+import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.getByType
 import proguard.gradle.ProGuardTask
@@ -168,8 +170,28 @@ class ConstruoPlugin : Plugin<Project> {
                 into(targetRoastExeDir)
             }
 
+            val packageDependencies = mutableListOf<TaskProvider<*>>(unzipRoast)
+            val targetRoastExeDirWithIcon = targetRoastExeDir.map { it.dir("icon") }
+            val originalRoastExe = targetRoastExeDir.map { it.file("roast-${target.roastName()}") }
+            val targetRoastExe = if (target is Target.Windows) {
+                targetRoastExeDirWithIcon
+            } else {
+                targetRoastExeDir
+            }.map { it.file("roast-${target.roastName()}") }
+
+            if (target is Target.Windows) {
+                val replaceIcon = tasks.register("replaceIcon$capitalized", ReplaceWinIconTask::class.java) {
+                    dependsOn(unzipRoast)
+                    inputFile.set(originalRoastExe)
+                    inputIcon.set(target.icon)
+                    outputFile.set(targetRoastExe)
+                }
+
+                packageDependencies.add(replaceIcon)
+            }
+
             val targetRoastExeName = pluginExtension.name.flatMap { name ->
-                targetRoastExeDir.map { it.file("roast-${target.roastName()}") }.map {
+                targetRoastExe.map {
                     if (it.asFile.extension.isEmpty()) {
                         name
                     } else {
@@ -179,7 +201,7 @@ class ConstruoPlugin : Plugin<Project> {
             }
 
             val packageRoast = tasks.register("roast$capitalized", RoastTask::class.java) {
-                dependsOn(unzipRoast)
+                dependsOn(packageDependencies)
                 jdkRoot.set(createRuntimeImage.flatMap { it.output })
                 appName.set(pluginExtension.name)
                 mainClassName.set(mainClass)
@@ -189,7 +211,7 @@ class ConstruoPlugin : Plugin<Project> {
                 runOnFirstThread.set(pluginExtension.roast.runOnFirstThread)
                 useMainAsContextClassLoader.set(pluginExtension.roast.useMainAsContextClassLoader)
                 output.set(targetRoastDir)
-                roastExe.set(targetRoastExeDir.map { it.file("roast-${target.roastName()}") })
+                roastExe.set(targetRoastExe)
                 roastExeName.set(targetRoastExeName)
             }
 
