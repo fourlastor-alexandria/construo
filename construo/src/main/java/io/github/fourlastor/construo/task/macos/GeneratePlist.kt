@@ -14,10 +14,18 @@ import org.redundent.kotlin.xml.xml
 
 abstract class GeneratePlist : BaseTask() {
 
-    @get:Input abstract val humanName: Property<String>
-
     @get:Optional @get:Input
     abstract val info: Property<String>
+
+    @get:Optional @get:Input
+    abstract val copyright: Property<String>
+
+    @get:Optional @get:Input
+    abstract val categoryName: Property<String>
+
+    @get:Input abstract val humanName: Property<String>
+
+    @get:Input abstract val versionName: Property<String>
 
     @get:Input abstract val executable: Property<String>
 
@@ -50,18 +58,26 @@ abstract class GeneratePlist : BaseTask() {
                     "key" { -"CFBundleIconFile" }
                     "string" { -icon.get().asFile.name }
                 }
-                "key" { -"CFBundleShortVersionString" }
-                "string" { -"1.0" }
                 "key" { -"CFBundleInfoDictionaryVersion" }
                 "string" { -"6.0" }
                 "key" { -"CFBundlePackageType" }
                 "string" { -"APPL" }
-                "key" { -"IFMajorVersion" }
-                "integer" { -"0" }
-                "key" { -"IFMinorVersion" }
-                "integer" { -"1" }
                 "key" { -"NSHighResolutionCapable" }
                 "true" { }
+                "key" { -"LSMinimumSystemVersion" }
+                "string" { -"10.12" }
+                "key" { -"CFBundleShortVersionString" }
+                "string" { -versionName.get() }
+                "key" { -"CFBundleVersion" }
+                "string" { -versionName.get() }
+                if (categoryName.isPresent) {
+                    "key" { -"LSApplicationCategoryType" }
+                    "string" { -categoryName.get() }
+                }
+                if (copyright.isPresent) {
+                    "key" { -"NSHumanReadableCopyright" }
+                    "string" { -copyright.get() }
+                }
             }
         }
         outputFile.get().asFile.writeText(

@@ -104,6 +104,11 @@ The `identifier` option is mandatory.
 
 An icon can be optionally specified with `macOsIcon` on each target.
 
+Human-readable copyright notice can be added with `copyright` option.
+
+To define app category use `categoryName` option. For possible values see https://developer.apple.com/documentation/bundleresources/information-property-list/lsapplicationcategorytype
+
+
 <details open>
 <summary>Kotlin DSL</summary>
 
@@ -123,6 +128,10 @@ construo {
             identifier.set("io.github.fourlastor.Game")
             // Optional: icon for macOS
             macIcon.set(project.file("path/to/mac-icon.icns"))
+            // Optional: set copyright
+            copyright.set("© 2025 Fourlastor")
+            // Optional: set application category
+            categoryName.set("public.app-category.developer-tools")
         }
         create<Target.Windows>("winX64") {
             architecture.set(Target.Architecture.X86_64)
@@ -154,6 +163,10 @@ construo {
             identifier.set("io.github.fourlastor.Game")
             // Optional: icon for macOS
             macIcon.set(project.file("path/to/mac-icon.icns"))
+            // Optional: set copyright
+            copyright.set("© 2025 Fourlastor")
+            // Optional: set application category
+            categoryName.set("public.app-category.developer-tools")
         }
         create("winX64", Target.Windows) {
             architecture.set(Target.Architecture.X86_64)

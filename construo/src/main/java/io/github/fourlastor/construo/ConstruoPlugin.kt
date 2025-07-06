@@ -240,6 +240,9 @@ class ConstruoPlugin : Plugin<Project> {
                     val generatePlist = tasks.register("generatePList$capitalized", GeneratePlist::class.java) {
                         humanName.set(pluginExtension.humanName)
                         info.set(pluginExtension.info)
+                        versionName.set(pluginExtension.version)
+                        copyright.set(target.copyright)
+                        categoryName.set(target.categoryName)
                         executable.set(pluginExtension.name)
                         identifier.set(target.identifier)
                         icon.set(target.macIcon)
