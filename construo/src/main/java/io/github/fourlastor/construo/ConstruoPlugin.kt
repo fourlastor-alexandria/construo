@@ -237,6 +237,7 @@ class ConstruoPlugin : Plugin<Project> {
                         pluginExtension.humanName.map { dir.dir("$it.app") }
                     }
                     val pListFile = targetBuildDir.map { it.file("Info.plist") }
+
                     val generatePlist = tasks.register("generatePList$capitalized", GeneratePlist::class.java) {
                         humanName.set(pluginExtension.humanName)
                         info.set(pluginExtension.info)
@@ -249,12 +250,17 @@ class ConstruoPlugin : Plugin<Project> {
                         outputFile.set(pListFile)
                     }
 
+                    val entitlementsFileName = pluginExtension.humanName.map {"$it.entitlements"}
+                    //val entitlementsDestination = targetBuildDir.map { it.file(entitlementsFileName) }
+
                     val buildMacAppBundle =
                         tasks.register("buildMacAppBundle$capitalized", BuildMacAppBundle::class.java) {
                             dependsOn(packageRoast, generatePlist)
                             packagedAppDir.set(targetRoastDir)
                             outputDirectory.set(macAppDir)
                             icon.set(target.macIcon)
+                            entitlementsFileSource.set(target.entitlementsFile)
+                            entitlementsFileDestination.set(entitlementsFileName)
                             plist.set(pListFile)
                         }
 

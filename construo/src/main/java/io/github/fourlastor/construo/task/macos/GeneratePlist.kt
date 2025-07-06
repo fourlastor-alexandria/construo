@@ -84,5 +84,6 @@ abstract class GeneratePlist : BaseTask() {
             text = plist.toString(printOptions = PrintOptions(pretty = true, singleLineTextElements = true)),
             charset = Charsets.UTF_8
         )
+
     }
 }

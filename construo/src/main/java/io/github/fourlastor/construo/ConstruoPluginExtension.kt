@@ -70,6 +70,7 @@ interface Target : Named {
         val copyright: Property<String>
         val categoryName: Property<String>
         val macIcon: RegularFileProperty
+        val entitlementsFile: RegularFileProperty
     }
 
     interface Windows : Target {

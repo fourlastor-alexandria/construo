@@ -4,11 +4,8 @@ import io.github.fourlastor.construo.task.BaseTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.tasks.InputDirectory
-import org.gradle.api.tasks.InputFile
-import org.gradle.api.tasks.Optional
-import org.gradle.api.tasks.OutputDirectory
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.*
 import javax.inject.Inject
 
 abstract class BuildMacAppBundle @Inject constructor(
@@ -23,6 +20,11 @@ abstract class BuildMacAppBundle @Inject constructor(
     abstract val icon: RegularFileProperty
 
     @get:OutputDirectory abstract val outputDirectory: DirectoryProperty
+
+    @get:Optional @get:InputFile abstract val entitlementsFileSource: RegularFileProperty
+    @get:OutputFile
+    abstract val entitlementsFileDestination: Property<String>
+
 
     @TaskAction
     fun run() {
@@ -41,6 +43,17 @@ abstract class BuildMacAppBundle @Inject constructor(
                 outputDirectory.get()
                     .dir("Contents")
             )
+            if (entitlementsFileSource.isPresent)
+            {
+                from(entitlementsFileSource)
+                into(
+                    outputDirectory.get()
+                        .dir("Contents")
+                )
+                rename (entitlementsFileSource.get().asFile.name,entitlementsFileDestination.get() )
+
+            }
         }
+
     }
 }

@@ -108,6 +108,7 @@ Human-readable copyright notice can be added with `copyright` option.
 
 To define app category use `categoryName` option. For possible values see https://developer.apple.com/documentation/bundleresources/information-property-list/lsapplicationcategorytype
 
+Optional `entitlementsFile` can be used to pick a file to define entitlements. This file will be copied into the app bundle and renamed to myAppName.entitlements
 
 <details open>
 <summary>Kotlin DSL</summary>
@@ -132,6 +133,8 @@ construo {
             copyright.set("© 2025 Fourlastor")
             // Optional: set application category
             categoryName.set("public.app-category.developer-tools")
+            // Optional: file to be used as entitlements file.
+            entitlementsFile.set(project.file("path/to/mac-entitlements.xml"))
         }
         create<Target.Windows>("winX64") {
             architecture.set(Target.Architecture.X86_64)
@@ -167,6 +170,8 @@ construo {
             copyright.set("© 2025 Fourlastor")
             // Optional: set application category
             categoryName.set("public.app-category.developer-tools")
+            // Optional: file to be used as entitlements file.
+            entitlementsFile.set(project.file("path/to/mac-entitlements.xml"))
         }
         create("winX64", Target.Windows) {
             architecture.set(Target.Architecture.X86_64)
