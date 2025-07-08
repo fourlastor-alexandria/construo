@@ -1,9 +1,7 @@
 package io.github.fourlastor.construo.task.macos
 
 import io.github.fourlastor.construo.task.BaseTask
-import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.file.FileSystemOperations
-import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.file.*
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.*
 import javax.inject.Inject
@@ -31,8 +29,16 @@ abstract class BuildMacAppBundle @Inject constructor(
         fileSystemOperations.delete { delete(outputDirectory) }
         fileSystemOperations.copy {
             from(packagedAppDir) {
+                includeEmptyDirs = false
                 into("MacOS")
+                eachFile {
+                    if (file.parentFile.name.contains('.')) {
+                        val dirSegment = relativePath.segments[relativePath.segments.size - 2]
+                        relativePath.segments[relativePath.segments.size - 2] = dirSegment.replace('.','_')
+                    }
+                }
             }
+
             from(plist)
             if (icon.isPresent) {
                 from(icon) {
@@ -53,7 +59,25 @@ abstract class BuildMacAppBundle @Inject constructor(
                 rename (entitlementsFileSource.get().asFile.name,entitlementsFileDestination.get() )
 
             }
+
         }
+
+        /*
+        val sourceDirectory = outputDirectory.get().dir("Contents/MacOS/runtime/legal").asFile
+        sourceDirectory.listFiles()?.forEach { folder ->
+            if (folder.isDirectory) {
+                if (folder.name.contains('.'))
+                {
+                    val newFolderName = folder.name.replace('.','_')
+                    val newFolderPath = folder.parentFile?.resolve(newFolderName)
+                    folder.renameTo(newFolderPath)
+                }
+            }
+        }
+
+         */
+
+
 
     }
 }
