@@ -62,22 +62,5 @@ abstract class BuildMacAppBundle @Inject constructor(
 
         }
 
-        /*
-        val sourceDirectory = outputDirectory.get().dir("Contents/MacOS/runtime/legal").asFile
-        sourceDirectory.listFiles()?.forEach { folder ->
-            if (folder.isDirectory) {
-                if (folder.name.contains('.'))
-                {
-                    val newFolderName = folder.name.replace('.','_')
-                    val newFolderPath = folder.parentFile?.resolve(newFolderName)
-                    folder.renameTo(newFolderPath)
-                }
-            }
-        }
-
-         */
-
-
-
     }
 }

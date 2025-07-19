@@ -251,7 +251,6 @@ class ConstruoPlugin : Plugin<Project> {
                     }
 
                     val entitlementsFileName = pluginExtension.humanName.map {"$it.entitlements"}
-                    //val entitlementsDestination = targetBuildDir.map { it.file(entitlementsFileName) }
 
                     val buildMacAppBundle =
                         tasks.register("buildMacAppBundle$capitalized", BuildMacAppBundle::class.java) {
