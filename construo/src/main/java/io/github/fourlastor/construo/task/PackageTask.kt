@@ -42,6 +42,9 @@ abstract class PackageTask: BaseTask() {
                 } else {
                     relativePath
                 }
+                if (entryName.isEmpty()) {
+                    return@forEach
+                }
                 val entry = ZipArchiveEntry(inputFile, entryName)
                 if (inputFile.absolutePath == executableFile.absolutePath) {
                     entry.unixMode = "764".toInt(radix = 8)
