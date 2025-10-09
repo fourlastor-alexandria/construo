@@ -9,6 +9,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import java.io.File
@@ -22,6 +23,7 @@ abstract class PackageTask: BaseTask() {
     @get:InputDirectory
     abstract val from: DirectoryProperty
     @get:Input
+    @get:Optional
     abstract val into: Property<String>
     @get:InputFile
     abstract val executable: RegularFileProperty
@@ -29,12 +31,21 @@ abstract class PackageTask: BaseTask() {
     @TaskAction
     fun run() {
         val destination = destinationDirectory.file(archiveFileName).get().asFile
-        val baseDir = into.get()
+        val baseDir = into.orNull
         val executableFile = executable.get().asFile
         ZipArchiveOutputStream(destination.outputStream().buffered()).use { zipOutStream ->
             val inputDir = from.get().asFile
             inputDir.walkTopDown().forEach { inputFile ->
-                val entry = ZipArchiveEntry(inputFile, "$baseDir/${inputFile.toRelativeString(inputDir)}".replace(File.separatorChar, '/'))
+                val relativePath = inputFile.toRelativeString(inputDir).replace(File.separatorChar, '/')
+                val entryName = if (baseDir != null) {
+                    "$baseDir/$relativePath"
+                } else {
+                    relativePath
+                }
+                if (entryName.isEmpty()) {
+                    return@forEach
+                }
+                val entry = ZipArchiveEntry(inputFile, entryName)
                 if (inputFile.absolutePath == executableFile.absolutePath) {
                     entry.unixMode = "764".toInt(radix = 8)
                 }

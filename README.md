@@ -12,7 +12,7 @@ Kotlin DSL
 
 ```kotlin
 plugins {
-  id("io.github.fourlastor.construo") version "1.7.1"
+  id("io.github.fourlastor.construo") version "2.0.1"
 }
 ```
 
@@ -20,7 +20,7 @@ Groovy DSL
 
 ```groovy
 plugins {
-  id "io.github.fourlastor.construo" version "1.7.1"
+  id "io.github.fourlastor.construo" version "2.0.1"
 }
 ```
 
@@ -36,8 +36,6 @@ construo {
     name.set("game")
     // human-readable name, used for example in the `.app` name for macOS
     humanName.set("Game")
-    // Optional, defaults to project version
-    version.set("0.0.0")
     // Optional, defaults to application.mainClass or jar task main class
     mainClass.set("io.github.fourlastor.gdx.Main")
     // Optional, defaults to $buildDir/construo/dist
@@ -45,6 +43,8 @@ construo {
     outputDir.set(rootProject.file("dist"))
     // Optional, an alternative jar task name to base the build upon
     jarTask.set("myJarTaskName")
+    // Optional, a folder to use as the root in the zip output file
+    zipFolder.set("game-v1.0.0")
 }
 ```
 

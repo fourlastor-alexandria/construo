@@ -35,9 +35,6 @@ class ConstruoPlugin : Plugin<Project> {
         val roastZipDir = baseBuildDir.map { it.dir("roast-zip") }
         val baseRoastExeDir = baseBuildDir.map { it.dir("roast-exe") }
         val jdkDir = baseBuildDir.map { it.dir("jdk") }
-        project.gradle.projectsEvaluated {
-            pluginExtension.version.convention(project.version.toString())
-        }
         pluginExtension.outputDir.convention(baseBuildDir.map { it.dir("dist") })
 
         project.plugins.withType(ApplicationPlugin::class.java) {
@@ -53,9 +50,6 @@ class ConstruoPlugin : Plugin<Project> {
 
             val capitalized = target.name.replaceFirstChar(Char::uppercase)
             val targetArchiveFileName = pluginExtension.name.map { "$it-${target.name}.zip" }
-            val packageDestination = pluginExtension.name.flatMap { name ->
-                pluginExtension.version.map { version -> "$name-$version-${target.name}" }
-            }
 
             val jdkUrl = target.jdkUrl.map {
                 val extension = if (it.endsWith(".zip")) "zip" else "tar.gz"
@@ -227,7 +221,7 @@ class ConstruoPlugin : Plugin<Project> {
                         archiveFileName.set(targetArchiveFileName)
                         destinationDirectory.set(pluginExtension.outputDir)
                         from.set(targetRoastDir)
-                        into.set(packageDestination)
+                        into.set(pluginExtension.zipFolder)
                         executable.set(targetRoastDir.flatMap { it.file(targetRoastExeName) })
                     }
                 }
@@ -269,7 +263,13 @@ class ConstruoPlugin : Plugin<Project> {
                         destinationDirectory.set(pluginExtension.outputDir)
                         dependsOn(buildMacAppBundle)
                         from.set(macAppDir)
-                        into.set(packageDestination.flatMap { destination -> pluginExtension.humanName.map { "$destination/$it.app" } })
+                        into.set(pluginExtension.humanName.flatMap { humanName ->
+                            if (pluginExtension.zipFolder.isPresent) {
+                                pluginExtension.zipFolder.map { destination -> "$destination/$humanName.app" }
+                            } else {
+                                project.provider { "$humanName.app" }
+                            }
+                        })
                         executable.set(macAppDir.flatMap { it.dir("Contents").dir("MacOS").file(targetRoastExeName) })
                     }
                 }
