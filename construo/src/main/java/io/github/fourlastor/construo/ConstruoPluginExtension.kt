@@ -68,6 +68,8 @@ interface Target : Named {
     interface Linux : Target
     interface MacOs : Target {
         val identifier: Property<String>
+        val buildNumber: Property<String>
+        val versionNumber: Property<String>
         val copyright: Property<String>
         val categoryName: Property<String>
         val macIcon: RegularFileProperty

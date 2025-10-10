@@ -14,6 +14,8 @@ import org.redundent.kotlin.xml.xml
 
 abstract class GeneratePlist : BaseTask() {
 
+    @get:Input abstract val humanName: Property<String>
+
     @get:Optional @get:Input
     abstract val info: Property<String>
 
@@ -23,9 +25,9 @@ abstract class GeneratePlist : BaseTask() {
     @get:Optional @get:Input
     abstract val categoryName: Property<String>
 
-    @get:Input abstract val humanName: Property<String>
+    @get:Optional @get:Input abstract val buildNumber: Property<String>
 
-    @get:Input abstract val versionName: Property<String>
+    @get:Optional @get:Input abstract val versionNumber: Property<String>
 
     @get:Input abstract val executable: Property<String>
 
@@ -66,14 +68,28 @@ abstract class GeneratePlist : BaseTask() {
                 "true" { }
                 "key" { -"LSMinimumSystemVersion" }
                 "string" { -"10.12" }
+
                 "key" { -"CFBundleShortVersionString" }
-                "string" { -versionName.get() }
+                if (versionNumber.isPresent) {
+                    "string" { -versionNumber.get() }
+                }
+                else {
+                    "string" { -"0.0.1" }
+                }
+
                 "key" { -"CFBundleVersion" }
-                "string" { -versionName.get() }
+                if (buildNumber.isPresent) {
+                    "string" { -buildNumber.get() }
+                }
+                else {
+                    "string" { -"0.0.1" }
+                }
+
                 if (categoryName.isPresent) {
                     "key" { -"LSApplicationCategoryType" }
                     "string" { -categoryName.get() }
                 }
+
                 if (copyright.isPresent) {
                     "key" { -"NSHumanReadableCopyright" }
                     "string" { -copyright.get() }

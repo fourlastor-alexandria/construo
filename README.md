@@ -102,6 +102,8 @@ The `icon` option specifies an icon to be used for the executable, this must be 
 
 The `identifier` option is mandatory.
 
+Optional but highly recommended are `buildNumber` and `versionNumber`. If they are not specified, a default value 0.0.1 is used. They are both used for the Info.plist file. buildNumber is for CFBundleVersion, versionNumber is for CFBundleShortVersionString 
+
 An icon can be optionally specified with `macOsIcon` on each target.
 
 Human-readable copyright notice can be added with `copyright` option.
@@ -127,6 +129,9 @@ construo {
             jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.11%2B9/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.11_9.tar.gz")
             // macOS needs an identifier
             identifier.set("io.github.fourlastor.Game")
+            // optional but highly recommended; app version number
+            buildNumber.set("1.0.0")
+            versionNumber.set("1.0.0")
             // Optional: icon for macOS
             macIcon.set(project.file("path/to/mac-icon.icns"))
             // Optional: set copyright
@@ -164,6 +169,10 @@ construo {
             jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.11%2B9/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.11_9.tar.gz")
             // macOS needs an identifier
             identifier.set("io.github.fourlastor.Game")
+            // optional but highly recommended; app version number
+            def projectNumber = project.properties.getOrDefault("version","1.0.0").toString()
+            buildNumber.set(projectNumber)
+            versionNumber.set(projectNumber)
             // Optional: icon for macOS
             macIcon.set(project.file("path/to/mac-icon.icns"))
             // Optional: set copyright

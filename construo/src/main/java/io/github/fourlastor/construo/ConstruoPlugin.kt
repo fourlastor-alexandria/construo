@@ -235,7 +235,8 @@ class ConstruoPlugin : Plugin<Project> {
                     val generatePlist = tasks.register("generatePList$capitalized", GeneratePlist::class.java) {
                         humanName.set(pluginExtension.humanName)
                         info.set(pluginExtension.info)
-                        versionName.set(pluginExtension.version)
+                        versionNumber.set(target.versionNumber)
+                        buildNumber.set(target.buildNumber)
                         copyright.set(target.copyright)
                         categoryName.set(target.categoryName)
                         executable.set(pluginExtension.name)
