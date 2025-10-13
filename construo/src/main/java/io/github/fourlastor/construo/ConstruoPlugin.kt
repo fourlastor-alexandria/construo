@@ -243,6 +243,7 @@ class ConstruoPlugin : Plugin<Project> {
                         identifier.set(target.identifier)
                         icon.set(target.macIcon)
                         outputFile.set(pListFile)
+                        additional.set(target.additionalInfoFile)
                     }
 
                     val entitlementsFileName = pluginExtension.humanName.map {"$it.entitlements"}

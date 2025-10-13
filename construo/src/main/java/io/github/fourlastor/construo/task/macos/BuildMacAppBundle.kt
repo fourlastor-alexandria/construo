@@ -30,8 +30,7 @@ abstract class BuildMacAppBundle @Inject constructor(
     abstract val outputDirectory: DirectoryProperty
 
     @get:Optional @get:InputFile abstract val entitlementsFileSource: RegularFileProperty
-    @get:OutputFile
-    abstract val entitlementsFileDestination: Property<String>
+    @get:Optional @get:OutputFile abstract val entitlementsFileDestination: Property<String>
 
 
     @TaskAction
@@ -59,7 +58,7 @@ abstract class BuildMacAppBundle @Inject constructor(
                 outputDirectory.get()
                     .dir("Contents")
             )
-            if (entitlementsFileSource.isPresent)
+            if ((entitlementsFileSource.isPresent) && (entitlementsFileDestination.isPresent))
             {
                 from(entitlementsFileSource)
                 into(

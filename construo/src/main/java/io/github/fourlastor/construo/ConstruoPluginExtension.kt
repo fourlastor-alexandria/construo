@@ -74,6 +74,7 @@ interface Target : Named {
         val categoryName: Property<String>
         val macIcon: RegularFileProperty
         val entitlementsFile: RegularFileProperty
+        val additionalInfoFile: RegularFileProperty
     }
 
     interface Windows : Target {

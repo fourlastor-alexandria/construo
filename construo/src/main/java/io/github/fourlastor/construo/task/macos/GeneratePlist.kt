@@ -8,6 +8,7 @@ import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
+import org.redundent.kotlin.xml.Node
 import org.redundent.kotlin.xml.PrintOptions
 import org.redundent.kotlin.xml.XmlVersion
 import org.redundent.kotlin.xml.xml
@@ -35,6 +36,9 @@ abstract class GeneratePlist : BaseTask() {
 
     @get:Optional @get:InputFile
     abstract val icon: RegularFileProperty
+
+    @get:Optional @get:InputFile
+    abstract val additional: RegularFileProperty
 
     @get:OutputFile abstract val outputFile: RegularFileProperty
 
@@ -69,20 +73,14 @@ abstract class GeneratePlist : BaseTask() {
                 "key" { -"LSMinimumSystemVersion" }
                 "string" { -"10.12" }
 
-                "key" { -"CFBundleShortVersionString" }
                 if (versionNumber.isPresent) {
+                    "key" { -"CFBundleShortVersionString" }
                     "string" { -versionNumber.get() }
                 }
-                else {
-                    "string" { -"0.0.1" }
-                }
 
-                "key" { -"CFBundleVersion" }
                 if (buildNumber.isPresent) {
+                    "key" { -"CFBundleVersion" }
                     "string" { -buildNumber.get() }
-                }
-                else {
-                    "string" { -"0.0.1" }
                 }
 
                 if (categoryName.isPresent) {
@@ -94,8 +92,22 @@ abstract class GeneratePlist : BaseTask() {
                     "key" { -"NSHumanReadableCopyright" }
                     "string" { -copyright.get() }
                 }
+
+                if (additional.isPresent)
+                {
+                    //read the xml for additional key-value pairs
+                    val additionalXML = org.redundent.kotlin.xml.parse(additional.get().asFile)
+                    for (child in additionalXML.children)
+                    {
+                        //add to the dict in the plist
+                        //note that this has doesn't have any proper validation
+                        //so we rely on the given xml being validly formatted
+                        if (child is Node) addNode(child)
+                    }
+                }
             }
         }
+
         outputFile.get().asFile.writeText(
             text = plist.toString(printOptions = PrintOptions(pretty = true, singleLineTextElements = true)),
             charset = Charsets.UTF_8
