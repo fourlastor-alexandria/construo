@@ -100,9 +100,21 @@ The `icon` option specifies an icon to be used for the executable, this must be 
 
 #### Macos
 
+Mac-specific options are mainly used to generate key-value pairs for the Info.plist file. For more information see https://developer.apple.com/documentation/bundleresources/information-property-list
+
 The `identifier` option is mandatory.
 
+Optional but highly recommended are `buildNumber` and `versionNumber`. They are both used for the Info.plist file. buildNumber is for CFBundleVersion, versionNumber is for CFBundleShortVersionString 
+
 An icon can be optionally specified with `macOsIcon` on each target.
+
+Human-readable copyright notice can be added with `copyright` option.
+
+To define app category use `categoryName` option. For possible values see https://developer.apple.com/documentation/bundleresources/information-property-list/lsapplicationcategorytype
+
+If you need any other key-value pairs in your Info.plist, use `additionalInfoFile` option. This should point to an xml file containing key-value pairs, formatted as they are in the Info.plist file.
+
+Optional `entitlementsFile` can be used to pick a file to define entitlements. This file will be copied into the app bundle and renamed to myAppName.entitlements . For possible values see https://developer.apple.com/documentation/bundleresources/entitlements
 
 <details open>
 <summary>Kotlin DSL</summary>
@@ -121,8 +133,19 @@ construo {
             jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.11%2B9/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.11_9.tar.gz")
             // macOS needs an identifier
             identifier.set("io.github.fourlastor.Game")
+            // Optional but highly recommended; app version number
+            buildNumber.set("1.0.0")
+            versionNumber.set("1.0")
             // Optional: icon for macOS
             macIcon.set(project.file("path/to/mac-icon.icns"))
+            // Optional: set copyright
+            copyright.set("© 2025 Fourlastor")
+            // Optional: set application category
+            categoryName.set("public.app-category.developer-tools")
+            // Optional: file to be used as entitlements file.
+            entitlementsFile.set(project.file("path/to/mac-entitlements.xml"))
+            // Optional: an xml file containing additional key-value pairs to be added to the Info.plist file
+            additionalInfoFile.set(project.file("path/to/mac-additional.xml"))
         }
         create<Target.Windows>("winX64") {
             architecture.set(Target.Architecture.X86_64)
@@ -152,8 +175,20 @@ construo {
             jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.11%2B9/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.11_9.tar.gz")
             // macOS needs an identifier
             identifier.set("io.github.fourlastor.Game")
+            // Optional but highly recommended; app version number
+            def projectVersionNumber = project.properties.getOrDefault("version","1.0.0").toString()
+            buildNumber.set(projectVersionNumber)
+            versionNumber.set(projectVersionNumber)
             // Optional: icon for macOS
             macIcon.set(project.file("path/to/mac-icon.icns"))
+            // Optional: set copyright
+            copyright.set("© 2025 Fourlastor")
+            // Optional: set application category
+            categoryName.set("public.app-category.developer-tools")
+            // Optional: file to be used as entitlements file.
+            entitlementsFile.set(project.file("path/to/mac-entitlements.xml"))
+            // Optional: an xml file containing additional key-value pairs to be added to the Info.plist file
+            additionalInfoFile.set(project.file("path/to/mac-additional.xml"))
         }
         create("winX64", Target.Windows) {
             architecture.set(Target.Architecture.X86_64)

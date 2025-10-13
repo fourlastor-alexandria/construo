@@ -8,6 +8,7 @@ import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
+import org.redundent.kotlin.xml.Node
 import org.redundent.kotlin.xml.PrintOptions
 import org.redundent.kotlin.xml.XmlVersion
 import org.redundent.kotlin.xml.xml
@@ -19,12 +20,25 @@ abstract class GeneratePlist : BaseTask() {
     @get:Optional @get:Input
     abstract val info: Property<String>
 
+    @get:Optional @get:Input
+    abstract val copyright: Property<String>
+
+    @get:Optional @get:Input
+    abstract val categoryName: Property<String>
+
+    @get:Optional @get:Input abstract val buildNumber: Property<String>
+
+    @get:Optional @get:Input abstract val versionNumber: Property<String>
+
     @get:Input abstract val executable: Property<String>
 
     @get:Input abstract val identifier: Property<String>
 
     @get:Optional @get:InputFile
     abstract val icon: RegularFileProperty
+
+    @get:Optional @get:InputFile
+    abstract val additional: RegularFileProperty
 
     @get:OutputFile abstract val outputFile: RegularFileProperty
 
@@ -50,23 +64,54 @@ abstract class GeneratePlist : BaseTask() {
                     "key" { -"CFBundleIconFile" }
                     "string" { -icon.get().asFile.name }
                 }
-                "key" { -"CFBundleShortVersionString" }
-                "string" { -"1.0" }
                 "key" { -"CFBundleInfoDictionaryVersion" }
                 "string" { -"6.0" }
                 "key" { -"CFBundlePackageType" }
                 "string" { -"APPL" }
-                "key" { -"IFMajorVersion" }
-                "integer" { -"0" }
-                "key" { -"IFMinorVersion" }
-                "integer" { -"1" }
                 "key" { -"NSHighResolutionCapable" }
                 "true" { }
+                "key" { -"LSMinimumSystemVersion" }
+                "string" { -"10.12" }
+
+                if (versionNumber.isPresent) {
+                    "key" { -"CFBundleShortVersionString" }
+                    "string" { -versionNumber.get() }
+                }
+
+                if (buildNumber.isPresent) {
+                    "key" { -"CFBundleVersion" }
+                    "string" { -buildNumber.get() }
+                }
+
+                if (categoryName.isPresent) {
+                    "key" { -"LSApplicationCategoryType" }
+                    "string" { -categoryName.get() }
+                }
+
+                if (copyright.isPresent) {
+                    "key" { -"NSHumanReadableCopyright" }
+                    "string" { -copyright.get() }
+                }
+
+                if (additional.isPresent)
+                {
+                    //read the xml for additional key-value pairs
+                    val additionalXML = org.redundent.kotlin.xml.parse(additional.get().asFile)
+                    for (child in additionalXML.children)
+                    {
+                        //add to the dict in the plist
+                        //note that this has doesn't have any proper validation
+                        //so we rely on the given xml being validly formatted
+                        if (child is Node) addNode(child)
+                    }
+                }
             }
         }
+
         outputFile.get().asFile.writeText(
             text = plist.toString(printOptions = PrintOptions(pretty = true, singleLineTextElements = true)),
             charset = Charsets.UTF_8
         )
+
     }
 }
