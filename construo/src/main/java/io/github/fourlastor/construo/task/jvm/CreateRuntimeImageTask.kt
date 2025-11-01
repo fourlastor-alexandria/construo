@@ -37,6 +37,10 @@ abstract class CreateRuntimeImageTask @Inject constructor(
     abstract val guessModulesFromJar: Property<Boolean>
 
     @get:Input
+    @get:Optional
+    abstract val multiReleaseVersion: Property<String>
+
+    @get:Input
     abstract val includeDefaultCryptoModules: Property<Boolean>
 
     @get:InputFile
@@ -112,6 +116,7 @@ abstract class CreateRuntimeImageTask @Inject constructor(
             commandLine(
                 File(javaHome, executableForOs("bin/jdeps")).absolutePath,
                 "--ignore-missing-deps",
+                "--multi-release", multiReleaseVersion.get(),
                 "--list-deps",
                 jarFile.get().asFile.absolutePath
             )

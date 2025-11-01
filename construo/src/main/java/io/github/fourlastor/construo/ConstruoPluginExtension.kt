@@ -2,6 +2,7 @@ package io.github.fourlastor.construo
 
 import org.gradle.api.Action
 import org.gradle.api.ExtensiblePolymorphicDomainObjectContainer
+import org.gradle.api.JavaVersion
 import org.gradle.api.Named
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
@@ -26,6 +27,14 @@ abstract class ConstruoPluginExtension @Inject constructor(
     val jlink: JlinkOptions = objectFactory.newInstance(JlinkOptions::class.java).apply {
         guessModulesFromJar.convention(true)
         includeDefaultCryptoModules.convention(true)
+
+        val version = JavaVersion.current()
+        multiReleaseVersion.convention(
+            if(version < JavaVersion.VERSION_1_9)
+                "base"
+            else
+                version.toString()
+        )
     }
     val roast: RoastOptions = objectFactory.newInstance(RoastOptions::class.java).apply {
         runOnFirstThread.convention(true)
@@ -52,6 +61,7 @@ interface JlinkOptions {
     val modules: ListProperty<String>
     val guessModulesFromJar: Property<Boolean>
     val includeDefaultCryptoModules: Property<Boolean>
+    val multiReleaseVersion: Property<String>
 }
 
 interface RoastOptions {
