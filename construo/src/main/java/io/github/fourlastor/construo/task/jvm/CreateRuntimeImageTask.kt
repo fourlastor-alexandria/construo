@@ -109,32 +109,30 @@ abstract class CreateRuntimeImageTask @Inject constructor(
         }
     }
 
-    private fun guessModulesFromJar(javaHome: File): List<String> = ByteArrayOutputStream().use {
-        execOperations.exec {
-            setWorkingDir(jdkRoot)
-            standardOutput = it
-            commandLine(
-                File(javaHome, executableForOs("bin/jdeps")).absolutePath,
-                "--ignore-missing-deps",
-                "--multi-release", multiReleaseVersion.orNull ?: getJvmVersion(javaHome),
-                "--list-deps",
-                jarFile.get().asFile.absolutePath
-            )
-        }
-        it.toByteArray().toString(Charset.defaultCharset())
-    }.splitToSequence("\n").map { it.trim() }.filter { it.isNotBlank() }.toList()
+	private fun guessModulesFromJar(javaHome: File): List<String> = executeInJdk(
+		javaHome,
+		"jdeps",
+		"--ignore-missing-deps",
+		"--multi-release", multiReleaseVersion.orNull ?: getJvmVersion(javaHome),
+		"--list-deps",
+		jarFile.get().asFile.absolutePath
+	).splitToSequence("\n").map { it.trim() }.filter { it.isNotBlank() }.toList()
 
-	private fun getJvmVersion(javaHome: File): String = ByteArrayOutputStream().use {
+	private fun getJvmVersion(javaHome: File): String = executeInJdk(javaHome, "java", "-version")
+		.split(" ")[2].removePrefix("\"").split(".")[0]
+
+	private fun executeInJdk(javaHome: File, command: String, vararg args: String): String = ByteArrayOutputStream().use {
 		execOperations.exec {
 			setWorkingDir(jdkRoot)
 			standardOutput = it
+			errorOutput = it // java version goes to the error stream
 			commandLine(
-				File(javaHome, executableForOs("bin/java")).absolutePath,
-				"-version"
+				File(javaHome, executableForOs("bin/$command")).absolutePath,
+				*args
 			)
 		}
 		it.toByteArray().toString(Charset.defaultCharset())
-	}.split(" ")[2].removePrefix("\"").split(".")[0]
+	}
 
     private fun executableForOs(executable: String): String = OperatingSystem.current().let { currentOs ->
         if (currentOs.isWindows) {
