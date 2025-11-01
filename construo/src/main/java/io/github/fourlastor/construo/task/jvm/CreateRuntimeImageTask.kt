@@ -38,7 +38,7 @@ abstract class CreateRuntimeImageTask @Inject constructor(
 
     @get:Input
     @get:Optional
-    abstract val multiReleaseVersion: Property<String>
+    abstract val multiReleaseVersion: Property<String?>
 
     @get:Input
     abstract val includeDefaultCryptoModules: Property<Boolean>
@@ -116,13 +116,25 @@ abstract class CreateRuntimeImageTask @Inject constructor(
             commandLine(
                 File(javaHome, executableForOs("bin/jdeps")).absolutePath,
                 "--ignore-missing-deps",
-                "--multi-release", multiReleaseVersion.get(),
+                "--multi-release", multiReleaseVersion.orNull ?: getJvmVersion(javaHome),
                 "--list-deps",
                 jarFile.get().asFile.absolutePath
             )
         }
         it.toByteArray().toString(Charset.defaultCharset())
     }.splitToSequence("\n").map { it.trim() }.filter { it.isNotBlank() }.toList()
+
+	private fun getJvmVersion(javaHome: File): String = ByteArrayOutputStream().use {
+		execOperations.exec {
+			setWorkingDir(jdkRoot)
+			standardOutput = it
+			commandLine(
+				File(javaHome, executableForOs("bin/java")).absolutePath,
+				"-version"
+			)
+		}
+		it.toByteArray().toString(Charset.defaultCharset())
+	}.split(" ")[2].removePrefix("\"").split(".")[0]
 
     private fun executableForOs(executable: String): String = OperatingSystem.current().let { currentOs ->
         if (currentOs.isWindows) {
