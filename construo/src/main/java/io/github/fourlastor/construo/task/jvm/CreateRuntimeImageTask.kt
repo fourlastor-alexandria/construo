@@ -38,7 +38,7 @@ abstract class CreateRuntimeImageTask @Inject constructor(
 
     @get:Input
     @get:Optional
-    abstract val multiReleaseVersion: Property<String?>
+    abstract val multiReleaseVersion: Property<String>
 
     @get:Input
     abstract val includeDefaultCryptoModules: Property<Boolean>
