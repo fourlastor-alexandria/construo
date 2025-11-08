@@ -118,8 +118,7 @@ abstract class CreateRuntimeImageTask @Inject constructor(
 		jarFile.get().asFile.absolutePath
 	).splitToSequence("\n").map { it.trim() }.filter { it.isNotBlank() }.toList()
 
-	private fun getJvmVersion(javaHome: File): String = executeInJdk(javaHome, "java", "--version")
-		.split(" ")[2].removePrefix("\"").split(".")[0]
+	private fun getJvmVersion(javaHome: File): String = executeInJdk(javaHome, "javap", "-version")
 
 	private fun executeInJdk(javaHome: File, command: String, vararg args: String): String = ByteArrayOutputStream().use {
 		execOperations.exec {
