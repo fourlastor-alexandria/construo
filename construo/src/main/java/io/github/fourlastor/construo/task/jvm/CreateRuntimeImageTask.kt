@@ -37,6 +37,10 @@ abstract class CreateRuntimeImageTask @Inject constructor(
     abstract val guessModulesFromJar: Property<Boolean>
 
     @get:Input
+    @get:Optional
+    abstract val multiReleaseVersion: Property<String>
+
+    @get:Input
     abstract val includeDefaultCryptoModules: Property<Boolean>
 
     @get:InputFile
@@ -105,19 +109,28 @@ abstract class CreateRuntimeImageTask @Inject constructor(
         }
     }
 
-    private fun guessModulesFromJar(javaHome: File): List<String> = ByteArrayOutputStream().use {
-        execOperations.exec {
-            setWorkingDir(jdkRoot)
-            standardOutput = it
-            commandLine(
-                File(javaHome, executableForOs("bin/jdeps")).absolutePath,
-                "--ignore-missing-deps",
-                "--list-deps",
-                jarFile.get().asFile.absolutePath
-            )
-        }
-        it.toByteArray().toString(Charset.defaultCharset())
-    }.splitToSequence("\n").map { it.trim() }.filter { it.isNotBlank() }.toList()
+	private fun guessModulesFromJar(javaHome: File): List<String> = executeInJdk(
+		javaHome,
+		"jdeps",
+		"--ignore-missing-deps",
+		"--multi-release", multiReleaseVersion.orNull ?: getJvmVersion(javaHome),
+		"--list-deps",
+		jarFile.get().asFile.absolutePath
+	).splitToSequence("\n").map { it.trim() }.filter { it.isNotBlank() }.toList()
+
+	private fun getJvmVersion(javaHome: File): String = executeInJdk(javaHome, "javap", "-version").split(".")[0]
+
+	private fun executeInJdk(javaHome: File, command: String, vararg args: String): String = ByteArrayOutputStream().use {
+		execOperations.exec {
+			setWorkingDir(jdkRoot)
+			standardOutput = it
+			commandLine(
+				File(javaHome, executableForOs("bin/$command")).absolutePath,
+				*args
+			)
+		}
+		it.toByteArray().toString(Charset.defaultCharset())
+	}
 
     private fun executableForOs(executable: String): String = OperatingSystem.current().let { currentOs ->
         if (currentOs.isWindows) {

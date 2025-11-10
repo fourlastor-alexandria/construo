@@ -123,6 +123,7 @@ class ConstruoPlugin : Plugin<Project> {
                     modules.set(pluginExtension.jlink.modules)
                     includeDefaultCryptoModules.set(pluginExtension.jlink.includeDefaultCryptoModules)
                     guessModulesFromJar.set(pluginExtension.jlink.guessModulesFromJar)
+                    multiReleaseVersion.set(pluginExtension.jlink.multiReleaseVersion)
                     output.set(targetRuntimeImageBuildDir)
                 }
 
