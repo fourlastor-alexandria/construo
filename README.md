@@ -12,7 +12,7 @@ Kotlin DSL
 
 ```kotlin
 plugins {
-  id("io.github.fourlastor.construo") version "2.0.2"
+  id("io.github.fourlastor.construo") version "2.1.0"
 }
 ```
 
@@ -20,7 +20,7 @@ Groovy DSL
 
 ```groovy
 plugins {
-  id "io.github.fourlastor.construo" version "2.0.2"
+  id "io.github.fourlastor.construo" version "2.1.0"
 }
 ```
 
