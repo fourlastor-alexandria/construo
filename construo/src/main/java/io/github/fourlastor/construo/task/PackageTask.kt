@@ -57,10 +57,10 @@ abstract class PackageTask: BaseTask() {
                 }
                 check(writtenEntries.add(entryName)) { "Duplicate package entry: $entryName" }
                 val entry = ZipArchiveEntry(inputFile, entryName)
-                if (inputFile.absolutePath == executableFile.absolutePath) {
+                if (inputFile.absolutePath == executableFile.absolutePath || inputFile.name.startsWith("jspawnhelper") || inputFile.name.startsWith("jexec")) {
                     entry.unixMode = UnixStat.FILE_FLAG or "755".toInt(radix = 8)
                 } else {
-                    entry.unixMode = if (inputFile.isDirectory) { UnixStat.DIR_FLAG } else { UnixStat.FILE_FLAG } or "644".toInt(radix = 8)
+                    entry.unixMode = if (inputFile.isDirectory) { UnixStat.DIR_FLAG or "755".toInt(radix = 8) } else { UnixStat.FILE_FLAG or "644".toInt(radix = 8) } 
                 }
                 zipOutStream.putArchiveEntry(entry)
                 if (!inputFile.isDirectory) {
