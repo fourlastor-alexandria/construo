@@ -4,6 +4,7 @@ import org.gradle.api.Action
 import org.gradle.api.ExtensiblePolymorphicDomainObjectContainer
 import org.gradle.api.Named
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
@@ -23,7 +24,7 @@ abstract class ConstruoPluginExtension @Inject constructor(
     abstract val jarTask: Property<String>
     abstract val zipFolder: Property<String>
     abstract val prePackageTasks: ListProperty<String>
-    abstract val packageFiles: MapProperty<String, String>
+    abstract val packageFiles: MapProperty<String, RegularFile>
 
     val targets: ExtensiblePolymorphicDomainObjectContainer<Target> = objectFactory.polymorphicDomainObjectContainer(Target::class.java)
     val jlink: JlinkOptions = objectFactory.newInstance(JlinkOptions::class.java).apply {
@@ -72,7 +73,7 @@ interface Target : Named {
     val architecture: Property<Architecture>
     val jdkUrl: Property<String>
     val prePackageTasks: ListProperty<String>
-    val packageFiles: MapProperty<String, String>
+    val packageFiles: MapProperty<String, RegularFile>
     interface Linux : Target
     interface MacOs : Target {
         val identifier: Property<String>

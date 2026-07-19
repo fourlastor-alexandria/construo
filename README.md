@@ -48,7 +48,9 @@ construo {
     // Optional tasks which must run before every package task
     prePackageTasks.addAll("generateAssets")
     // Optional local files to include, mapped to their package-relative path
-    packageFiles.put("assets/common.txt", "runtime/common.txt")
+    packageFiles.set(mapOf(
+        "runtime/common.txt" to layout.projectDirectory.file("assets/common.txt"),
+    ))
 }
 ```
 
@@ -158,7 +160,9 @@ construo {
             useGpuHint.set(false)
             // Optional tasks and files used only by this target
             prePackageTasks.add("generateWindowsAssets")
-            packageFiles.put("assets/windows.dll", "runtime/windows.dll")
+            packageFiles.set(mapOf(
+                "runtime/windows.dll" to layout.projectDirectory.file("assets/windows.dll"),
+            ))
         }
     }
 }
@@ -204,7 +208,9 @@ construo {
             useGpuHint.set(false)
             // Optional tasks and files used only by this target
             prePackageTasks.add("generateWindowsAssets")
-            packageFiles.put("assets/windows.dll", "runtime/windows.dll")
+            packageFiles.set([
+                "runtime/windows.dll": layout.projectDirectory.file("assets/windows.dll"),
+            ])
         }
     }
 }
