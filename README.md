@@ -45,6 +45,12 @@ construo {
     jarTask.set("myJarTaskName")
     // Optional, a folder to use as the root in the zip output file
     zipFolder.set("game-v1.0.0")
+    // Optional tasks which must run before every package task
+    prePackageTasks.addAll("generateAssets")
+    // Optional local files to include, mapped to their package-relative path
+    packageFiles.set(mapOf(
+        "runtime/common.txt" to layout.projectDirectory.file("assets/common.txt"),
+    ))
 }
 ```
 
@@ -152,6 +158,11 @@ construo {
             jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.11%2B9/OpenJDK17U-jdk_x64_windows_hotspot_17.0.11_9.zip")
             // use executable with GPU hints, defaults to true
             useGpuHint.set(false)
+            // Optional tasks and files used only by this target
+            prePackageTasks.add("generateWindowsAssets")
+            packageFiles.set(mapOf(
+                "runtime/windows.dll" to layout.projectDirectory.file("assets/windows.dll"),
+            ))
         }
     }
 }
@@ -195,6 +206,11 @@ construo {
             jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.11%2B9/OpenJDK17U-jdk_x64_windows_hotspot_17.0.11_9.zip")
             // use executable with GPU hints, defaults to true
             useGpuHint.set(false)
+            // Optional tasks and files used only by this target
+            prePackageTasks.add("generateWindowsAssets")
+            packageFiles.set([
+                "runtime/windows.dll": layout.projectDirectory.file("assets/windows.dll"),
+            ])
         }
     }
 }

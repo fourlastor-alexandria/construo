@@ -45,6 +45,8 @@ class ConstruoPlugin : Plugin<Project> {
         // Register the correct tasks for each target
         pluginExtension.targets.all {
             val target = this
+            target.prePackageTasks.convention(emptyList())
+            target.packageFiles.convention(emptyMap())
             val targetBuildDir = baseBuildDir.map { it.dir(target.name) }
             val targetRuntimeImageBuildDir = baseRuntimeImageBuildDir.map { it.dir("${project.name}-${target.name}") }
 
@@ -214,16 +216,21 @@ class ConstruoPlugin : Plugin<Project> {
                 roastExeName.set(targetRoastExeName)
             }
 
+            val packageExtraFiles = pluginExtension.packageFiles.zip(target.packageFiles) { generic, targetSpecific ->
+                generic + targetSpecific
+            }
+
             when (target) {
                 is Target.Linux, is Target.Windows -> {
                     tasks.register("package$capitalized", PackageTask::class.java) {
                         group = GROUP_NAME
-                        dependsOn(packageRoast)
+                        dependsOn(packageRoast, pluginExtension.prePackageTasks, target.prePackageTasks)
                         archiveFileName.set(targetArchiveFileName)
                         destinationDirectory.set(pluginExtension.outputDir)
                         from.set(targetRoastDir)
                         into.set(pluginExtension.zipFolder)
                         executable.set(targetRoastDir.flatMap { it.file(targetRoastExeName) })
+                        packageFiles.set(packageExtraFiles)
                     }
                 }
 
@@ -264,7 +271,7 @@ class ConstruoPlugin : Plugin<Project> {
                         group = GROUP_NAME
                         archiveFileName.set(targetArchiveFileName)
                         destinationDirectory.set(pluginExtension.outputDir)
-                        dependsOn(buildMacAppBundle)
+                        dependsOn(buildMacAppBundle, pluginExtension.prePackageTasks, target.prePackageTasks)
                         from.set(macAppDir)
                         into.set(pluginExtension.humanName.flatMap { humanName ->
                             if (pluginExtension.zipFolder.isPresent) {
@@ -274,6 +281,7 @@ class ConstruoPlugin : Plugin<Project> {
                             }
                         })
                         executable.set(macAppDir.flatMap { it.dir("Contents").dir("MacOS").file(targetRoastExeName) })
+                        packageFiles.set(packageExtraFiles)
                     }
                 }
             }

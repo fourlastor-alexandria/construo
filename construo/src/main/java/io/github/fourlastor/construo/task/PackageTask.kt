@@ -4,13 +4,20 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveEntry
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream
 import org.apache.commons.io.IOUtils
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.FileCollection
+import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import java.io.File
 
@@ -27,24 +34,34 @@ abstract class PackageTask: BaseTask() {
     abstract val into: Property<String>
     @get:InputFile
     abstract val executable: RegularFileProperty
+    @get:Internal
+    abstract val packageFiles: MapProperty<String, RegularFile>
+
+    @InputFiles
+    @PathSensitive(PathSensitivity.RELATIVE)
+    fun getPackageFileInputs(): FileCollection = project.files(packageFiles.map { it.values })
+
+    @Input
+    fun getPackageFileMappings(): Map<String, String> = packageFiles.get().mapValues { (_, sourceFile) ->
+        project.relativePath(sourceFile.asFile)
+    }
 
     @TaskAction
     fun run() {
         val destination = destinationDirectory.file(archiveFileName).get().asFile
         val baseDir = into.orNull
         val executableFile = executable.get().asFile
+        val inputDir = from.get().asFile
+        val executableParent = executableFile.parentFile.toRelativeString(inputDir).toZipPath()
+        val writtenEntries = mutableSetOf<String>()
         ZipArchiveOutputStream(destination.outputStream().buffered()).use { zipOutStream ->
-            val inputDir = from.get().asFile
             inputDir.walkTopDown().forEach { inputFile ->
-                val relativePath = inputFile.toRelativeString(inputDir).replace(File.separatorChar, '/')
-                val entryName = if (baseDir != null) {
-                    "$baseDir/$relativePath"
-                } else {
-                    relativePath
-                }
+                val relativePath = inputFile.toRelativeString(inputDir).toZipPath()
+                val entryName = zipPath(baseDir, relativePath)
                 if (entryName.isEmpty()) {
                     return@forEach
                 }
+                check(writtenEntries.add(entryName)) { "Duplicate package entry: $entryName" }
                 val entry = ZipArchiveEntry(inputFile, entryName)
                 if (inputFile.absolutePath == executableFile.absolutePath) {
                     entry.unixMode = "764".toInt(radix = 8)
@@ -55,8 +72,25 @@ abstract class PackageTask: BaseTask() {
                 }
                 zipOutStream.closeArchiveEntry()
             }
+            packageFiles.get().forEach { (destinationPath, sourceFile) ->
+                val source = sourceFile.asFile
+                require(source.isFile) { "Package file '$source' does not exist or is not a regular file" }
+                val entryName = zipPath(baseDir, executableParent, destinationPath)
+                check(writtenEntries.add(entryName)) { "Duplicate package entry: $entryName" }
+                zipOutStream.putArchiveEntry(ZipArchiveEntry(source, entryName))
+                source.inputStream().use { IOUtils.copy(it, zipOutStream) }
+                zipOutStream.closeArchiveEntry()
+            }
             zipOutStream.finish()
         }
     }
+
+    private fun String.toZipPath(): String = replace(File.separatorChar, '/').trim('/')
+
+    private fun zipPath(vararg parts: String?): String = parts
+        .filterNotNull()
+        .map { it.toZipPath() }
+        .filter { it.isNotEmpty() }
+        .joinToString("/")
 
 }
