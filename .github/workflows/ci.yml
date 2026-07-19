@@ -20,7 +20,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
       - name: Build construo
-        run: ./gradlew assemble
+        run: ./gradlew check
         working-directory: ./construo
       - name: Build test project
         run: ./gradlew test:packageLinuxX64 test:packageMacM1 test:packageMacX64 test:packageWinX64
@@ -45,3 +45,24 @@ jobs:
         working-directory: ./construo
       - name: Check code formatting test project
         run: ./gradlew spotlessCheck
+  windows-tests:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+      - name: Test construo
+        run: ./gradlew check
+        working-directory: ./construo
+      - name: Package Windows with target JDK tools
+        run: ./gradlew test:packageWinX64 -PuseTargetJdkTools=true
+      - name: Extract and launch Windows package
+        shell: pwsh
+        run: |
+          Expand-Archive -Path test/build/construo/dist/game-winX64.zip -DestinationPath test/build/construo/windows-run
+          $process = Start-Process -FilePath test/build/construo/windows-run/game.exe -Wait -PassThru
+          if ($process.ExitCode -ne 0) { exit $process.ExitCode }

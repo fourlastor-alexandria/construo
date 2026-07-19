@@ -10,6 +10,9 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.TaskExecutionException
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 abstract class DownloadTask: BaseTask() {
 
@@ -22,16 +25,37 @@ abstract class DownloadTask: BaseTask() {
     @TaskAction
     fun run() {
         val client = OkHttpClient()
-        val result = runCatching { client.newCall(Request.Builder().url(src.get()).build()).execute() }
-        result.onSuccess { response ->
-            if (!response.isSuccessful) {
-                throw TaskExecutionException(this, RuntimeException("${response.request.url} returned failure code ${response.code}"))
+        val destination = dest.get().asFile
+        val partial = destination.resolveSibling("${destination.name}.part")
+        partial.delete()
+        try {
+            client.newCall(Request.Builder().url(src.get()).build()).execute().use { response ->
+                if (!response.isSuccessful) {
+                    throw RuntimeException("${response.request.url} returned failure code ${response.code}")
+                }
+                requireNotNull(response.body).use {
+                    FileUtils.openOutputStream(partial).use { output ->
+                        IOUtils.copy(it.byteStream(), output)
+                    }
+                }
             }
-            requireNotNull(response.body).use {
-                IOUtils.copy(it.byteStream(), FileUtils.openOutputStream(dest.get().asFile))
+            try {
+                Files.move(
+                    partial.toPath(),
+                    destination.toPath(),
+                    StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.REPLACE_EXISTING,
+                )
+            } catch (_: AtomicMoveNotSupportedException) {
+                Files.move(
+                    partial.toPath(),
+                    destination.toPath(),
+                    StandardCopyOption.REPLACE_EXISTING,
+                )
             }
-        }.onFailure {
-            throw TaskExecutionException(this, it)
+        } catch (failure: Throwable) {
+            partial.delete()
+            throw TaskExecutionException(this, failure)
         }
     }
 }

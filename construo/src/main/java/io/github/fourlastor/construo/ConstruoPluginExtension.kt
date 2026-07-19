@@ -32,6 +32,8 @@ abstract class ConstruoPluginExtension @Inject constructor(
         includeDefaultCryptoModules.convention(true)
     }
     val roast: RoastOptions = objectFactory.newInstance(RoastOptions::class.java).apply {
+        version.convention("v1.4.0")
+        baseUrl.convention("https://github.com/fourlastor-alexandria/roast/releases/download")
         runOnFirstThread.convention(true)
         useZgc.convention(true)
         useMainAsContextClassLoader.convention(false)
@@ -62,6 +64,8 @@ interface JlinkOptions {
 }
 
 interface RoastOptions {
+    val version: Property<String>
+    val baseUrl: Property<String>
     val runOnFirstThread: Property<Boolean>
     val useZgc: Property<Boolean>
     val useMainAsContextClassLoader: Property<Boolean>
@@ -72,10 +76,16 @@ interface Target : Named {
 
     val architecture: Property<Architecture>
     val jdkUrl: Property<String>
+    val jdkSha256: Property<String>
+    val roastUrl: Property<String>
+    val roastSha256: Property<String>
+    val archiveFile: RegularFileProperty
+    val packagingToolJdk: Property<PackagingToolJdk>
     val prePackageTasks: ListProperty<String>
     val packageFiles: MapProperty<String, RegularFile>
     interface Linux : Target
     interface MacOs : Target {
+        val appBundle: Property<Boolean>
         val identifier: Property<String>
         val buildNumber: Property<String>
         val versionNumber: Property<String>
@@ -94,5 +104,10 @@ interface Target : Named {
     enum class Architecture(val arch: String) {
         X86_64("x64"),
         AARCH64("aarch64"),
+    }
+
+    enum class PackagingToolJdk {
+        HOST_JDK,
+        TARGET_JDK,
     }
 }
