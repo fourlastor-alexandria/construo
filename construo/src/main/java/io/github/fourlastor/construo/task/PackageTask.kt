@@ -1,5 +1,6 @@
 package io.github.fourlastor.construo.task
 
+import org.apache.commons.compress.archivers.zip.UnixStat
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream
 import org.apache.commons.io.IOUtils
@@ -63,8 +64,10 @@ abstract class PackageTask: BaseTask() {
                 }
                 check(writtenEntries.add(entryName)) { "Duplicate package entry: $entryName" }
                 val entry = ZipArchiveEntry(inputFile, entryName)
-                if (inputFile.absolutePath == executableFile.absolutePath) {
-                    entry.unixMode = "764".toInt(radix = 8)
+                if (inputFile.absolutePath == executableFile.absolutePath || inputFile.name.startsWith("jspawnhelper") || inputFile.name.startsWith("jexec")) {
+                    entry.unixMode = UnixStat.FILE_FLAG or "755".toInt(radix = 8)
+                } else {
+                    entry.unixMode = if (inputFile.isDirectory) { UnixStat.DIR_FLAG or "755".toInt(radix = 8) } else { UnixStat.FILE_FLAG or "644".toInt(radix = 8) } 
                 }
                 zipOutStream.putArchiveEntry(entry)
                 if (!inputFile.isDirectory) {
@@ -77,7 +80,9 @@ abstract class PackageTask: BaseTask() {
                 require(source.isFile) { "Package file '$source' does not exist or is not a regular file" }
                 val entryName = zipPath(baseDir, executableParent, destinationPath)
                 check(writtenEntries.add(entryName)) { "Duplicate package entry: $entryName" }
-                zipOutStream.putArchiveEntry(ZipArchiveEntry(source, entryName))
+                val archiveEntry = ZipArchiveEntry(source, entryName)
+                archiveEntry.unixMode = if (source.isDirectory) { UnixStat.DIR_FLAG } else { UnixStat.FILE_FLAG } or "644".toInt(radix = 8)
+                zipOutStream.putArchiveEntry(archiveEntry)
                 source.inputStream().use { IOUtils.copy(it, zipOutStream) }
                 zipOutStream.closeArchiveEntry()
             }

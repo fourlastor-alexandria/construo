@@ -49,6 +49,7 @@ class ConstruoPlugin : Plugin<Project> {
             target.packageFiles.convention(emptyMap())
             val targetBuildDir = baseBuildDir.map { it.dir(target.name) }
             val targetRuntimeImageBuildDir = baseRuntimeImageBuildDir.map { it.dir("${project.name}-${target.name}") }
+            val targetRuntimeImageWithNativeCommandsBuildDir = baseRuntimeImageBuildDir.map { it.dir("${project.name}-${target.name}-natives") }
 
             val capitalized = target.name.replaceFirstChar(Char::uppercase)
             val targetArchiveFileName = pluginExtension.name.map { "$it-${target.name}.zip" }
@@ -115,19 +116,34 @@ class ConstruoPlugin : Plugin<Project> {
                     else -> throw IllegalStateException("Only supported custom task types are Jar and ProguardTask, it was ${it.javaClass}")
                 }
             }
+            
+            fun createRuntimeImageTask(
+                name: String,
+                withoutNativeCommands: Boolean, 
+                targetRuntimeImageBuildDir: Provider<Directory>,
+            ) = tasks.register(name, CreateRuntimeImageTask::class.java) {
+                dependsOn(unzipJdk, selectedTask)
+                jdkRoot.set(runningJdkRoot)
+                jarFile.set(jarFileLocation)
+                targetJdkRoot.set(jdkTargetRoot)
+                modules.set(pluginExtension.jlink.modules)
+                includeDefaultCryptoModules.set(pluginExtension.jlink.includeDefaultCryptoModules)
+                guessModulesFromJar.set(pluginExtension.jlink.guessModulesFromJar)
+                multiReleaseVersion.set(pluginExtension.jlink.multiReleaseVersion)
+                output.set(targetRuntimeImageBuildDir)
+                stripNativeCommands.set(withoutNativeCommands)
+            }
 
-            val createRuntimeImage =
-                tasks.register("createRuntimeImage$capitalized", CreateRuntimeImageTask::class.java) {
-                    dependsOn(unzipJdk, selectedTask)
-                    jdkRoot.set(runningJdkRoot)
-                    jarFile.set(jarFileLocation)
-                    targetJdkRoot.set(jdkTargetRoot)
-                    modules.set(pluginExtension.jlink.modules)
-                    includeDefaultCryptoModules.set(pluginExtension.jlink.includeDefaultCryptoModules)
-                    guessModulesFromJar.set(pluginExtension.jlink.guessModulesFromJar)
-                    multiReleaseVersion.set(pluginExtension.jlink.multiReleaseVersion)
-                    output.set(targetRuntimeImageBuildDir)
-                }
+            val createRuntimeImage = createRuntimeImageTask(
+                "createRuntimeImage$capitalized",
+                withoutNativeCommands = true,
+                targetRuntimeImageBuildDir
+            )
+            createRuntimeImageTask(
+                "createRuntimeImageWithNatives$capitalized",
+                withoutNativeCommands = false,
+                targetRuntimeImageWithNativeCommandsBuildDir
+            )
 
             fun Target.roastName(): String = when (this) {
                 is Target.Windows -> {

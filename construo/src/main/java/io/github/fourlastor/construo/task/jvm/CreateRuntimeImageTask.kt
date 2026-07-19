@@ -43,6 +43,9 @@ abstract class CreateRuntimeImageTask @Inject constructor(
     @get:Input
     abstract val includeDefaultCryptoModules: Property<Boolean>
 
+    @get:Input
+    abstract val stripNativeCommands: Property<Boolean>
+
     @get:InputFile
     abstract val jarFile: RegularFileProperty
 
@@ -90,9 +93,13 @@ abstract class CreateRuntimeImageTask @Inject constructor(
             } else {
                 arrayOf()
             }
+            
+            val stripNativeCommandsArg = if (stripNativeCommands.get()) arrayOf("--strip-native-commands") else arrayOf()
+            
+            
             val jlinkArgs = arrayOf(
-                "--no-header-files",
-                "--strip-native-commands",
+                "--no-header-files"
+            ) + stripNativeCommandsArg + arrayOf(
                 "--no-man-pages",
                 "--compress=1",
                 "--strip-debug"
@@ -102,6 +109,7 @@ abstract class CreateRuntimeImageTask @Inject constructor(
                 "--output",
                 outputFile.absolutePath
             )
+            
             commandLine(
                 File(javaHome, executableForOs("bin/jlink")).absolutePath,
                 *jlinkArgs
