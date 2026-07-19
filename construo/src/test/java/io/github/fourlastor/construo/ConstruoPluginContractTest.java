@@ -198,9 +198,16 @@ public class ConstruoPluginContractTest {
         assertTrue(dependencies.contains("roastMacosArm64"));
         assertFalse(dependencies.contains("buildMacAppBundleMacosArm64"));
         assertFalse(dependencies.contains("generatePListMacosArm64"));
-        assertTrue(packageTask.getFrom().get().getAsFile().getPath().endsWith("macosArm64/roast"));
+        String rawPackagePath = new File("macosArm64", "roast").getPath();
+        assertTrue(packageTask.getFrom().get().getAsFile().getPath().endsWith(rawPackagePath));
         assertFalse(packageTask.getInto().isPresent());
-        assertTrue(packageTask.getExecutable().get().getAsFile().getPath().endsWith("macosArm64/roast/game"));
+        assertTrue(
+                packageTask
+                        .getExecutable()
+                        .get()
+                        .getAsFile()
+                        .getPath()
+                        .endsWith(new File(rawPackagePath, "game").getPath()));
     }
 
     @Test
