@@ -5,6 +5,7 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream
 import org.apache.commons.io.IOUtils
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileCollection
+import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
@@ -12,6 +13,7 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.PathSensitive
@@ -32,12 +34,17 @@ abstract class PackageTask: BaseTask() {
     abstract val into: Property<String>
     @get:InputFile
     abstract val executable: RegularFileProperty
-    @get:Input
-    abstract val packageFiles: MapProperty<String, String>
+    @get:Internal
+    abstract val packageFiles: MapProperty<String, RegularFile>
 
     @InputFiles
     @PathSensitive(PathSensitivity.RELATIVE)
-    fun getPackageFileInputs(): FileCollection = project.files(packageFiles.keySet())
+    fun getPackageFileInputs(): FileCollection = project.files(packageFiles.map { it.values })
+
+    @Input
+    fun getPackageFileMappings(): Map<String, String> = packageFiles.get().mapValues { (_, sourceFile) ->
+        project.relativePath(sourceFile.asFile)
+    }
 
     @TaskAction
     fun run() {
@@ -65,9 +72,9 @@ abstract class PackageTask: BaseTask() {
                 }
                 zipOutStream.closeArchiveEntry()
             }
-            packageFiles.get().forEach { (sourcePath, destinationPath) ->
-                val source = project.file(sourcePath)
-                require(source.isFile) { "Package file '$sourcePath' does not exist or is not a regular file" }
+            packageFiles.get().forEach { (destinationPath, sourceFile) ->
+                val source = sourceFile.asFile
+                require(source.isFile) { "Package file '$source' does not exist or is not a regular file" }
                 val entryName = zipPath(baseDir, executableParent, destinationPath)
                 check(writtenEntries.add(entryName)) { "Duplicate package entry: $entryName" }
                 zipOutStream.putArchiveEntry(ZipArchiveEntry(source, entryName))
