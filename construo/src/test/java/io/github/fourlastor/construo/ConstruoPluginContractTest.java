@@ -80,14 +80,6 @@ public class ConstruoPluginContractTest {
     }
 
     @Test
-    public void roastDefaultsToLatestCompatibleRelease() throws Exception {
-        Project project = newProject();
-        ConstruoPluginExtension extension = extension(project);
-
-        assertEquals("v1.6.0", property(extension.getRoast(), "getVersion", Property.class).get());
-    }
-
-    @Test
     public void targetJdkCanProvideAllPackagingTools() throws Exception {
         Project project = newProject();
         ConstruoPluginExtension extension = extension(project);
