@@ -25,7 +25,7 @@ jobs:
       - name: Build test project
         run: ./gradlew test:packageLinuxX64 test:packageMacM1 test:packageMacX64 test:packageWinX64
       - name: Artifact upload
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: outputs-${{ matrix.os }}
           path: test/build/construo/dist
