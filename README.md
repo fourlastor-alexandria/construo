@@ -78,8 +78,8 @@ Construo uses [roast](https://github.com/fourlastor-alexandria/roast/) to run th
 ```kotlin
 construo {
     roast {
-        // Roast release coordinates, defaults to v1.4.0 on GitHub Releases
-        version.set("v1.4.0")
+        // Roast release coordinates, defaults to v1.6.0 on GitHub Releases
+        version.set("v1.6.0")
         baseUrl.set("https://github.com/fourlastor-alexandria/roast/releases/download")
         // MacOS only, whether to run the jvm on the main thread, defaults to true
         runOnFirstThread.set(false)
@@ -95,7 +95,7 @@ construo {
 
 ### Defining targets
 
-Targets define the output bundles Construo will generate. Each target must define its architecture, a JDK URL (a JRE is not sufficient), and SHA-256 digests for both the JDK and Roast downloads. The digests are verified before either archive is extracted.
+Targets define the output bundles Construo will generate. Each target must define its architecture and a JDK URL (a JRE is not sufficient). Optional SHA-256 digests can pin the JDK and Roast downloads; when configured, each digest is verified before its archive is extracted.
 
 By default, packaging tools such as `jlink` and `jdeps` come from the host JDK for compatibility. Set `packagingToolJdk` to `Target.PackagingToolJdk.TARGET_JDK` to run the tools from the downloaded target JDK when its operating system and architecture are executable on the build host. `archiveFile` can override the complete output ZIP path for a target. A target-specific `roastUrl` can override the URL derived from the global Roast coordinates.
 

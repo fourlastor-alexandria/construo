@@ -22,7 +22,6 @@ import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
-import java.io.File
 import javax.inject.Inject
 
 abstract class PackageTask @Inject constructor(
@@ -120,7 +119,7 @@ abstract class PackageTask @Inject constructor(
         }
     }
 
-    private fun String.toZipPath(): String = replace('\\', '/').replace(File.separatorChar, '/').trim('/')
+    private fun String.toZipPath(): String = replace('\\', '/').trim('/')
 
     private fun normalizeArchivePath(label: String, path: String): String {
         val normalized = path.replace('\\', '/')

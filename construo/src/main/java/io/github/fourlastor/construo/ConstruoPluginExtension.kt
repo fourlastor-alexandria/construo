@@ -32,7 +32,7 @@ abstract class ConstruoPluginExtension @Inject constructor(
         includeDefaultCryptoModules.convention(true)
     }
     val roast: RoastOptions = objectFactory.newInstance(RoastOptions::class.java).apply {
-        version.convention("v1.4.0")
+        version.convention("v1.6.0")
         baseUrl.convention("https://github.com/fourlastor-alexandria/roast/releases/download")
         runOnFirstThread.convention(true)
         useZgc.convention(true)

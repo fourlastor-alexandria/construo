@@ -87,7 +87,7 @@ class ConstruoPlugin : Plugin<Project> {
             val targetJdkDir = jdkDir.map { it.dir(target.name) }
             val unzipJdk = tasks.register("unzipJdk$capitalized", ExtractJdkTask::class.java) {
                 group = GROUP_NAME
-                dependsOn(verifyJdk)
+                dependsOn(target.jdkSha256.map { listOf(verifyJdk) }.orElse(emptyList()))
                 archive.set(downloadJdk.flatMap { it.dest })
                 outputDirectory.set(targetJdkDir)
             }
@@ -206,7 +206,7 @@ class ConstruoPlugin : Plugin<Project> {
             val targetRoastExeDir = baseRoastExeDir.map { it.dir(target.name) }
             val unzipRoast = tasks.register("unzipRoast$capitalized", Copy::class.java) {
                 group = GROUP_NAME
-                dependsOn(verifyRoast)
+                dependsOn(target.roastSha256.map { listOf(verifyRoast) }.orElse(emptyList()))
                 from(project.zipTree(downloadRoast.flatMap { it.dest }))
                 into(targetRoastExeDir)
             }
