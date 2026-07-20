@@ -1,7 +1,9 @@
 package io.github.fourlastor.construo
 
 import io.github.fourlastor.construo.task.DownloadTask
+import io.github.fourlastor.construo.task.ExtractJdkTask
 import io.github.fourlastor.construo.task.PackageTask
+import io.github.fourlastor.construo.task.VerifySha256Task
 import io.github.fourlastor.construo.task.jvm.CreateRuntimeImageTask
 import io.github.fourlastor.construo.task.jvm.RoastTask
 import io.github.fourlastor.construo.task.macos.BuildMacAppBundle
@@ -47,6 +49,10 @@ class ConstruoPlugin : Plugin<Project> {
             val target = this
             target.prePackageTasks.convention(emptyList())
             target.packageFiles.convention(emptyMap())
+            target.packagingToolJdk.convention(Target.PackagingToolJdk.HOST_JDK)
+            if (target is Target.MacOs) {
+                target.appBundle.convention(true)
+            }
             val targetBuildDir = baseBuildDir.map { it.dir(target.name) }
             val targetRuntimeImageBuildDir = baseRuntimeImageBuildDir.map { it.dir("${project.name}-${target.name}") }
             val targetRuntimeImageWithNativeCommandsBuildDir = baseRuntimeImageBuildDir.map { it.dir("${project.name}-${target.name}-natives") }
@@ -72,30 +78,26 @@ class ConstruoPlugin : Plugin<Project> {
                 src.set(jdkUrl.map { it.url })
                 dest.set(jdkDest)
             }
+            val verifyJdk =
+                tasks.register("verifyJdk$capitalized", VerifySha256Task::class.java) {
+                    group = GROUP_NAME
+                    archive.set(downloadJdk.flatMap { it.dest })
+                    expectedSha256.set(target.jdkSha256)
+                }
             val targetJdkDir = jdkDir.map { it.dir(target.name) }
-            val unzipJdk = tasks.register("unzipJdk$capitalized", Copy::class.java) {
+            val unzipJdk = tasks.register("unzipJdk$capitalized", ExtractJdkTask::class.java) {
                 group = GROUP_NAME
-                dependsOn(downloadJdk)
-                from(
-                    jdkDest.map {
-                        if (it.asFile.extension  == "zip") {
-                            project.zipTree(it)
-                        } else {
-                            project.tarTree(it)
-                        }
-                    }
-                ) {
-                    exclude("**/legal/**")
-                }
-                into(targetJdkDir)
-                doFirst {
-                    targetJdkDir.get().asFile.deleteRecursively()
-                }
+                dependsOn(target.jdkSha256.map { listOf(verifyJdk) }.orElse(emptyList()))
+                archive.set(downloadJdk.flatMap { it.dest })
+                outputDirectory.set(targetJdkDir)
             }
             val targetRoastDir = targetBuildDir.map { it.dir("roast") }
 
             val runningJdkRoot = pluginExtension.jdkRoot.orElse(project.layout.dir(project.provider { File(System.getProperty("java.home")) }))
-            val jdkTargetRoot = project.layout.dir(unzipJdk.map { it.destinationDir }).findJdkRoot()
+            val jdkTargetRoot = unzipJdk.flatMap { it.outputDirectory }
+            val packagingJdkRoot = target.packagingToolJdk.flatMap {
+                if (it == Target.PackagingToolJdk.TARGET_JDK) jdkTargetRoot else runningJdkRoot
+            }
 
             val selectedTask = pluginExtension.jarTask
                 .map { tasks.getByName(it) }
@@ -123,7 +125,7 @@ class ConstruoPlugin : Plugin<Project> {
                 targetRuntimeImageBuildDir: Provider<Directory>,
             ) = tasks.register(name, CreateRuntimeImageTask::class.java) {
                 dependsOn(unzipJdk, selectedTask)
-                jdkRoot.set(runningJdkRoot)
+                jdkRoot.set(packagingJdkRoot)
                 jarFile.set(jarFileLocation)
                 targetJdkRoot.set(jdkTargetRoot)
                 modules.set(pluginExtension.jlink.modules)
@@ -145,56 +147,81 @@ class ConstruoPlugin : Plugin<Project> {
                 targetRuntimeImageWithNativeCommandsBuildDir
             )
 
-            fun Target.roastName(): String = when (this) {
+            fun Target.roastName(): Provider<String> = when (this) {
                 is Target.Windows -> {
-                    val architectureSuffix = when (architecture.get()) {
-                        Target.Architecture.X86_64 -> "x86_64"
-                        Target.Architecture.AARCH64 -> "aarch64"
-                    }
-                    if (useConsole.getOrElse(false)) {
-                        "win-console-$architectureSuffix.exe"
-                    } else if (useGpuHint.getOrElse(true)) {
-                        "win-$architectureSuffix.exe"
-                    } else {
-                        "win-no-gpu-$architectureSuffix.exe"
+                    architecture.zip(useConsole.orElse(false)) { architecture, useConsole ->
+                        architecture to useConsole
+                    }.zip(useGpuHint.orElse(true)) { (architecture, useConsole), useGpuHint ->
+                        val architectureSuffix = when (architecture) {
+                            Target.Architecture.X86_64 -> "x86_64"
+                            Target.Architecture.AARCH64 -> "aarch64"
+                            else -> error("Unsupported architecture: $architecture")
+                        }
+                        if (useConsole) {
+                            "win-console-$architectureSuffix.exe"
+                        } else if (useGpuHint) {
+                            "win-$architectureSuffix.exe"
+                        } else {
+                            "win-no-gpu-$architectureSuffix.exe"
+                        }
                     }
                 }
 
-                is Target.Linux -> when (architecture.get()) {
-                    Target.Architecture.X86_64 -> "linux-x86_64"
-                    Target.Architecture.AARCH64 -> "linux-aarch64"
+                is Target.Linux -> architecture.map {
+                    when (it) {
+                        Target.Architecture.X86_64 -> "linux-x86_64"
+                        Target.Architecture.AARCH64 -> "linux-aarch64"
+                    }
                 }
 
-                is Target.MacOs -> when (architecture.get()) {
-                    Target.Architecture.X86_64 -> "macos-x86_64"
-                    Target.Architecture.AARCH64 -> "macos-aarch64"
+                is Target.MacOs -> architecture.map {
+                    when (it) {
+                        Target.Architecture.X86_64 -> "macos-x86_64"
+                        Target.Architecture.AARCH64 -> "macos-aarch64"
+                    }
                 }
 
                 else -> error("Unsupported target.")
             }
 
-            val roastVersion = "v1.4.0"
+            val roastName = target.roastName()
+            val defaultRoastUrl =
+                pluginExtension.roast.baseUrl
+                    .zip(pluginExtension.roast.version) { baseUrl, version ->
+                        "${baseUrl.trimEnd('/')}/$version"
+                    }
+                    .zip(roastName) { releaseUrl, name -> "$releaseUrl/roast-$name.zip" }
+            target.roastUrl.convention(defaultRoastUrl)
             val downloadRoast = tasks.register("downloadRoast$capitalized", DownloadTask::class.java) {
                 group = GROUP_NAME
-                src.set("https://github.com/fourlastor-alexandria/roast/releases/download/$roastVersion/roast-${target.roastName()}.zip")
-                dest.set(roastZipDir.map { it.file("roast-${target.roastName()}.zip") })
+                src.set(target.roastUrl)
+                dest.set(roastZipDir.map { it.file("${target.name}/roast.zip") })
             }
+            val verifyRoast =
+                tasks.register("verifyRoast$capitalized", VerifySha256Task::class.java) {
+                    group = GROUP_NAME
+                    archive.set(downloadRoast.flatMap { it.dest })
+                    expectedSha256.set(target.roastSha256)
+                }
             val targetRoastExeDir = baseRoastExeDir.map { it.dir(target.name) }
             val unzipRoast = tasks.register("unzipRoast$capitalized", Copy::class.java) {
                 group = GROUP_NAME
-                dependsOn(downloadRoast)
-                from(project.zipTree(roastZipDir.map { it.file("roast-${target.roastName()}.zip") }))
+                dependsOn(target.roastSha256.map { listOf(verifyRoast) }.orElse(emptyList()))
+                from(project.zipTree(downloadRoast.flatMap { it.dest }))
                 into(targetRoastExeDir)
             }
 
             val packageDependencies = mutableListOf<TaskProvider<*>>(unzipRoast)
             val targetRoastExeDirWithIcon = targetRoastExeDir.map { it.dir("icon") }
-            val originalRoastExe = targetRoastExeDir.map { it.file("roast-${target.roastName()}") }
+            val originalRoastExe =
+                targetRoastExeDir.flatMap { directory ->
+                    directory.file(roastName.map { "roast-$it" })
+                }
             val targetRoastExe = if (target is Target.Windows) {
                 targetRoastExeDirWithIcon
             } else {
                 targetRoastExeDir
-            }.map { it.file("roast-${target.roastName()}") }
+            }.flatMap { directory -> directory.file(roastName.map { "roast-$it" }) }
 
             if (target is Target.Windows) {
                 val replaceIcon = tasks.register("replaceIcon$capitalized", ReplaceWinIconTask::class.java) {
@@ -243,6 +270,9 @@ class ConstruoPlugin : Plugin<Project> {
                         dependsOn(packageRoast, pluginExtension.prePackageTasks, target.prePackageTasks)
                         archiveFileName.set(targetArchiveFileName)
                         destinationDirectory.set(pluginExtension.outputDir)
+                        archiveFile.convention(
+                            target.archiveFile.orElse(destinationDirectory.file(archiveFileName))
+                        )
                         from.set(targetRoastDir)
                         into.set(pluginExtension.zipFolder)
                         executable.set(targetRoastDir.flatMap { it.file(targetRoastExeName) })
@@ -287,29 +317,50 @@ class ConstruoPlugin : Plugin<Project> {
                         group = GROUP_NAME
                         archiveFileName.set(targetArchiveFileName)
                         destinationDirectory.set(pluginExtension.outputDir)
-                        dependsOn(buildMacAppBundle, pluginExtension.prePackageTasks, target.prePackageTasks)
-                        from.set(macAppDir)
-                        into.set(pluginExtension.humanName.flatMap { humanName ->
-                            if (pluginExtension.zipFolder.isPresent) {
-                                pluginExtension.zipFolder.map { destination -> "$destination/$humanName.app" }
-                            } else {
-                                project.provider { "$humanName.app" }
+                        archiveFile.convention(
+                            target.archiveFile.orElse(destinationDirectory.file(archiveFileName))
+                        )
+                        dependsOn(
+                            target.appBundle.map { if (it) buildMacAppBundle else packageRoast },
+                            pluginExtension.prePackageTasks,
+                            target.prePackageTasks,
+                        )
+                        from.set(target.appBundle.flatMap { if (it) macAppDir else targetRoastDir })
+                        into.set(
+                            target.appBundle.flatMap { appBundle ->
+                                if (appBundle) {
+                                    pluginExtension.humanName.flatMap { humanName ->
+                                        if (pluginExtension.zipFolder.isPresent) {
+                                            pluginExtension.zipFolder.map { destination ->
+                                                "$destination/$humanName.app"
+                                            }
+                                        } else {
+                                            project.provider { "$humanName.app" }
+                                        }
+                                    }
+                                } else {
+                                    pluginExtension.zipFolder
+                                }
                             }
-                        })
-                        executable.set(macAppDir.flatMap { it.dir("Contents").dir("MacOS").file(targetRoastExeName) })
+                        )
+                        executable.set(
+                            target.appBundle.flatMap {
+                                if (it) {
+                                    macAppDir.flatMap { directory ->
+                                        directory.dir("Contents").dir("MacOS").file(targetRoastExeName)
+                                    }
+                                } else {
+                                    targetRoastDir.flatMap { directory ->
+                                        directory.file(targetRoastExeName)
+                                    }
+                                }
+                            }
+                        )
                         packageFiles.set(packageExtraFiles)
                     }
                 }
             }
         }
-    }
-
-    private fun Provider<Directory>.findJdkRoot() = this.map { root ->
-        val dir = root.asFile
-            .walkTopDown()
-            .firstOrNull { File(it, "bin/java").isFile || File(it, "bin/java.exe").isFile }
-            ?.path ?: throw RuntimeException("Couldn't find java home in ${root.asFile.absolutePath}")
-        root.dir(dir)
     }
 
     companion object {

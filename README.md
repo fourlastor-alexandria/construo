@@ -78,6 +78,9 @@ Construo uses [roast](https://github.com/fourlastor-alexandria/roast/) to run th
 ```kotlin
 construo {
     roast {
+        // Roast release coordinates, defaults to v1.6.0 on GitHub Releases
+        version.set("v1.6.0")
+        baseUrl.set("https://github.com/fourlastor-alexandria/roast/releases/download")
         // MacOS only, whether to run the jvm on the main thread, defaults to true
         runOnFirstThread.set(false)
         // use ZGC garbage collector, defaults to true
@@ -92,7 +95,9 @@ construo {
 
 ### Defining targets
 
-Targets define the output bundles construo will generate, each target will need to define the architecture, and a JDK url for that specific target (you cannot use a JRE for cross compilation).
+Targets define the output bundles Construo will generate. Each target must define its architecture and a JDK URL (a JRE is not sufficient). Optional SHA-256 digests can pin the JDK and Roast downloads; when configured, each digest is verified before its archive is extracted.
+
+By default, packaging tools such as `jlink` and `jdeps` come from the host JDK for compatibility. Set `packagingToolJdk` to `Target.PackagingToolJdk.TARGET_JDK` to run the tools from the downloaded target JDK when its operating system and architecture are executable on the build host. `archiveFile` can override the complete output ZIP path for a target. A target-specific `roastUrl` can override the URL derived from the global Roast coordinates.
 
 #### Windows
 
@@ -108,7 +113,9 @@ The `icon` option specifies an icon to be used for the executable, this must be 
 
 Mac-specific options are mainly used to generate key-value pairs for the Info.plist file. For more information see https://developer.apple.com/documentation/bundleresources/information-property-list
 
-The `identifier` option is mandatory.
+The `identifier` option is mandatory when building an app bundle.
+
+Set `appBundle` to `false` to package a raw macOS command-line executable and its runtime at the root of the archive instead of generating a `.app` bundle. It defaults to `true`.
 
 Optional but highly recommended are `buildNumber` and `versionNumber`. They are both used for the Info.plist file. buildNumber is for CFBundleVersion, versionNumber is for CFBundleShortVersionString 
 
@@ -133,10 +140,14 @@ construo {
         create<Target.Linux>("linuxX64") {
             architecture.set(Target.Architecture.X86_64)
             jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.11%2B9/OpenJDK17U-jdk_x64_linux_hotspot_17.0.11_9.tar.gz")
+            jdkSha256.set("<jdk-sha256>")
+            roastSha256.set("<roast-sha256>")
         }
         create<Target.MacOs>("macM1") {
             architecture.set(Target.Architecture.AARCH64)
             jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.11%2B9/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.11_9.tar.gz")
+            jdkSha256.set("<jdk-sha256>")
+            roastSha256.set("<roast-sha256>")
             // macOS needs an identifier
             identifier.set("io.github.fourlastor.Game")
             // Optional but highly recommended; app version number
@@ -156,6 +167,8 @@ construo {
         create<Target.Windows>("winX64") {
             architecture.set(Target.Architecture.X86_64)
             jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.11%2B9/OpenJDK17U-jdk_x64_windows_hotspot_17.0.11_9.zip")
+            jdkSha256.set("<jdk-sha256>")
+            roastSha256.set("<roast-sha256>")
             // use executable with GPU hints, defaults to true
             useGpuHint.set(false)
             // Optional tasks and files used only by this target
@@ -180,10 +193,14 @@ construo {
         create("linuxX64", Target.Linux) {
             architecture.set(Target.Architecture.X86_64)
             jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.11%2B9/OpenJDK17U-jdk_x64_linux_hotspot_17.0.11_9.tar.gz")
+            jdkSha256.set("<jdk-sha256>")
+            roastSha256.set("<roast-sha256>")
         }
         create("macM1", Target.MacOs) {
             architecture.set(Target.Architecture.AARCH64)
             jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.11%2B9/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.11_9.tar.gz")
+            jdkSha256.set("<jdk-sha256>")
+            roastSha256.set("<roast-sha256>")
             // macOS needs an identifier
             identifier.set("io.github.fourlastor.Game")
             // Optional but highly recommended; app version number
@@ -204,6 +221,8 @@ construo {
         create("winX64", Target.Windows) {
             architecture.set(Target.Architecture.X86_64)
             jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.11%2B9/OpenJDK17U-jdk_x64_windows_hotspot_17.0.11_9.zip")
+            jdkSha256.set("<jdk-sha256>")
+            roastSha256.set("<roast-sha256>")
             // use executable with GPU hints, defaults to true
             useGpuHint.set(false)
             // Optional tasks and files used only by this target
@@ -223,4 +242,4 @@ You can set a `ProguardTask` as the `jarTask` name, in that case, you will also 
 
 ### Packaging the targets
 
-Each defined target will generate a `packageXXX` task, where `XXX` is the capitalized name of the target (for example: `packageLinuxX64`). Running the task will produce a zip inside the `outputDir` folder containing the fully packaged app.
+Each defined target will generate a `packageXXX` task, where `XXX` is the capitalized name of the target (for example: `packageLinuxX64`). Running the task will produce a ZIP inside the `outputDir` folder containing the fully packaged app, unless that target sets an explicit `archiveFile`.
