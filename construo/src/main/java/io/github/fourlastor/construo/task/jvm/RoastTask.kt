@@ -15,6 +15,8 @@ import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import javax.inject.Inject
 
 abstract class RoastTask @Inject constructor(
@@ -91,10 +93,13 @@ abstract class RoastTask @Inject constructor(
             into(output.dir("runtime"))
         }
 
-        fileSystemOperations.copy {
-            from(jarFile)
-            into(output)
-        }
+        val applicationJar = jarFile.get().asFile
+        Files.copy(
+            applicationJar.toPath(),
+            outputDir.resolve(applicationJar.name).toPath(),
+            StandardCopyOption.COPY_ATTRIBUTES,
+            StandardCopyOption.REPLACE_EXISTING,
+        )
     }
 
     @Serializable
