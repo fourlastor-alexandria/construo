@@ -72,7 +72,7 @@ dependencies {
     implementation(libs.xmlBuilder)
     implementation(libs.shadow)
     implementation(libs.kotlinx.serialization)
-    implementation(libs.guardsquare.proguard)
+    compileOnly(libs.guardsquare.proguard)
     implementation(libs.gdx.jnigen.loader)
     testImplementation(gradleTestKit())
     testImplementation("junit:junit:4.13.2")
