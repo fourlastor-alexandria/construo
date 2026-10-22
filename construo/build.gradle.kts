@@ -70,7 +70,6 @@ dependencies {
     implementation(libs.apache.commons.compress)
     implementation(libs.square.okhttp)
     implementation(libs.xmlBuilder)
-    implementation(libs.shadow)
     implementation(libs.kotlinx.serialization)
     compileOnly(libs.guardsquare.proguard)
     implementation(libs.gdx.jnigen.loader)
