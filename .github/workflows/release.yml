@@ -20,9 +20,26 @@ jobs:
           java-version: '17'
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
+      - name: Determine version
+        id: version
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ "$REF_TYPE" != "tag" ]; then
+            echo "::error::Publishing is only supported from a tag"
+            exit 1
+          fi
+          VERSION="${REF_NAME#v}"
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$'; then
+            echo "::error::'$VERSION' is not a valid version"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Publish package
-        run: ./gradlew publishPlugins
+        run: ./gradlew publishPlugins -PlibVersion="$LIB_VERSION"
         working-directory: ./construo
         env:
+          LIB_VERSION: ${{ steps.version.outputs.version }}
           GRADLE_PUBLISH_KEY: ${{ secrets.ORG_GRADLE_PROJECT_PLUGIN_PORTAL_KEY }}
           GRADLE_PUBLISH_SECRET: ${{ secrets.ORG_GRADLE_PROJECT_PLUGIN_PORTAL_SECRET }}
