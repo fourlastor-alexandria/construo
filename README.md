@@ -6,13 +6,13 @@ Construo is a gradle plugin to cross compile JVM apps.
 
 ## Setup
 
-Add the plugin to your project
+Add the plugin to your project, replacing `<version>` with the latest version shown in the badge above
 
 Kotlin DSL
 
 ```kotlin
 plugins {
-  id("io.github.fourlastor.construo") version "2.2.2"
+  id("io.github.fourlastor.construo") version "<version>"
 }
 ```
 
@@ -20,7 +20,7 @@ Groovy DSL
 
 ```groovy
 plugins {
-  id "io.github.fourlastor.construo" version "2.2.2"
+  id "io.github.fourlastor.construo" version "<version>"
 }
 ```
 
