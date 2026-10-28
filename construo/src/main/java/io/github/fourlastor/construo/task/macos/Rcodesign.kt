@@ -1,5 +1,6 @@
 package io.github.fourlastor.construo.task.macos
 
+import org.apache.commons.io.output.CloseShieldOutputStream
 import org.gradle.process.ExecOperations
 import org.gradle.process.ExecResult
 import java.io.File
@@ -67,8 +68,9 @@ internal fun ExecOperations.runRcodesign(
     // rcodesign reads every RCODESIGN_ variable as one of its own settings
     environment.keys.removeAll { it.startsWith("RCODESIGN_") }
     if (output != null) {
-        standardOutput = output
-        errorOutput = output
+        // Gradle closes each one when its output ends, maybe while the other one still has some to write
+        standardOutput = CloseShieldOutputStream.wrap(output)
+        errorOutput = CloseShieldOutputStream.wrap(output)
     }
     isIgnoreExitValue = true
 }

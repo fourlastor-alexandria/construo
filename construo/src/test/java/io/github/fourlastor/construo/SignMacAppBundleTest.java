@@ -209,9 +209,10 @@ public class SignMacAppBundleTest {
 
     @Test
     public void unreadableCertificateFailureExplainsTheLegacyEncryption() throws Exception {
+        // the error comes after the other stream ended: both go to the same log
         writeScript(
                 task.getRcodesign().get().getAsFile(),
-                "echo 'Error: incorrect password given when decrypting PFX data'\nexit 1");
+                "exec 2>&-\nsleep 0.5\necho 'Error: incorrect password given when decrypting PFX data'\nexit 1");
         task.getCertificate().set(temporaryFolder.newFile("modern.p12"));
 
         try {
