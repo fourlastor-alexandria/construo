@@ -9,7 +9,11 @@ import static org.junit.Assert.fail;
 
 import io.github.fourlastor.construo.task.DownloadTask;
 import io.github.fourlastor.construo.task.PackageTask;
+import io.github.fourlastor.construo.task.VerifySha256Task;
 import io.github.fourlastor.construo.task.jvm.CreateRuntimeImageTask;
+import io.github.fourlastor.construo.task.macos.BuildMacAppBundle;
+import io.github.fourlastor.construo.task.macos.Rcodesign;
+import io.github.fourlastor.construo.task.macos.SignMacAppBundle;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -239,6 +243,220 @@ public class ConstruoPluginContractTest {
     }
 
     @Test
+    public void exposesTheMacSigningContract() throws Exception {
+        assertGetter(Target.MacOs.class, "getSigning");
+        assertGetter(Target.MacOs.class, "getNotarization");
+        assertGetter(ConstruoPluginExtension.class, "getRcodesign");
+        Target.MacOs.class.getMethod("signing", org.gradle.api.Action.class);
+        Target.MacOs.class.getMethod("notarization", org.gradle.api.Action.class);
+        ConstruoPluginExtension.class.getMethod("rcodesign", org.gradle.api.Action.class);
+    }
+
+    @Test
+    public void unsignedMacBundleIsPackagedAsBuilt() throws Exception {
+        Project project = newProject();
+        Target.MacOs target = createMacTarget(extension(project), "macM1");
+
+        PackageTask packageTask = (PackageTask) project.getTasks().getByName("packageMacM1");
+
+        assertFalse(target.getSigning().getEnabled().get());
+        assertFalse(target.getNotarization().getEnabled().get());
+        Set<String> dependencies = taskDependencyNames(packageTask);
+        assertTrue(dependencies.contains("buildMacAppBundleMacM1"));
+        assertFalse(dependencies.contains("signMacAppBundleMacM1"));
+        assertEquals(new File(project.getBuildDir(), "construo/macM1/Game.app"), packageTask.getFrom().get().getAsFile());
+        assertEquals(
+                new File(project.getBuildDir(), "construo/macM1/Game.app/Contents/MacOS/game"),
+                packageTask.getExecutable().get().getAsFile());
+    }
+
+    @Test
+    public void signedMacBundleIsPackagedFromTheSignedApp() throws Exception {
+        Project project = newProject();
+        ConstruoPluginExtension extension = extension(project);
+        Target.MacOs target = createMacTarget(extension, "macM1");
+        File extra = new File(project.getProjectDir(), "extra.txt");
+        target.getPackageFiles()
+                .set(Collections.singletonMap("extra.txt", project.getLayout().getProjectDirectory().file("extra.txt")));
+        target.getEntitlementsFile().set(new File(project.getProjectDir(), "app.entitlements"));
+        target.signing(signing -> signing.getEnabled().set(true));
+
+        PackageTask packageTask = (PackageTask) project.getTasks().getByName("packageMacM1");
+        SignMacAppBundle sign = (SignMacAppBundle) project.getTasks().getByName("signMacAppBundleMacM1");
+        BuildMacAppBundle build = (BuildMacAppBundle) project.getTasks().getByName("buildMacAppBundleMacM1");
+
+        assertTrue(taskDependencyNames(packageTask).contains("signMacAppBundleMacM1"));
+        assertTrue(taskDependencyNames(sign).contains("extractRcodesign"));
+        File signedApp = new File(project.getBuildDir(), "construo/macM1/signed/Game.app");
+        assertEquals(signedApp, packageTask.getFrom().get().getAsFile());
+        assertEquals(signedApp, sign.getOutputDirectory().get().getAsFile());
+        assertEquals(new File(signedApp, "Contents/MacOS/game"), packageTask.getExecutable().get().getAsFile());
+        // the signed app has them inside, in its seal
+        assertTrue(packageTask.getPackageFiles().get().isEmpty());
+        assertEquals(extra, sign.getPackageFiles().get().get("extra.txt").getAsFile());
+        // the signature carries the entitlements
+        assertFalse(build.getEntitlementsFileSource().isPresent());
+        assertEquals(new File(project.getProjectDir(), "app.entitlements"), sign.getEntitlementsFile().get().getAsFile());
+        assertFalse(sign.getHardenedRuntime().get());
+        assertFalse(sign.getCertificate().isPresent());
+    }
+
+    @Test
+    public void certificateSignatureHasTheHardenedRuntime() throws Exception {
+        Project project = newProject();
+        Target.MacOs target = createMacTarget(extension(project), "macM1");
+        target.getSigning().getEnabled().set(true);
+        target.getSigning().getCertificate().set(new File(project.getProjectDir(), "developer-id.p12"));
+
+        SignMacAppBundle sign = (SignMacAppBundle) project.getTasks().getByName("signMacAppBundleMacM1");
+
+        assertTrue(sign.getHardenedRuntime().get());
+        assertFalse(sign.getForNotarization().get());
+        target.getSigning().getHardenedRuntime().set(false);
+        assertFalse(sign.getHardenedRuntime().get());
+    }
+
+    @Test
+    public void notarizedMacBundleIsSignedAndPackagedFromTheNotarizedApp() throws Exception {
+        Project project = newProject();
+        Target.MacOs target = createMacTarget(extension(project), "macM1");
+        target.notarization(notarization -> notarization.getEnabled().set(true));
+
+        PackageTask packageTask = (PackageTask) project.getTasks().getByName("packageMacM1");
+        SignMacAppBundle sign = (SignMacAppBundle) project.getTasks().getByName("signMacAppBundleMacM1");
+        Task notarize = project.getTasks().getByName("notarizeMacAppBundleMacM1");
+
+        assertTrue(target.getSigning().getEnabled().get());
+        assertTrue(sign.getForNotarization().get());
+        assertTrue(taskDependencyNames(packageTask).contains("notarizeMacAppBundleMacM1"));
+        assertTrue(taskDependencyNames(notarize).contains("signMacAppBundleMacM1"));
+        assertEquals(
+                new File(project.getBuildDir(), "construo/macM1/notarized/Game.app"),
+                packageTask.getFrom().get().getAsFile());
+    }
+
+    @Test
+    public void notarizationNeedsSigning() throws Exception {
+        Project project = newProject();
+        Target.MacOs target = createMacTarget(extension(project), "macM1");
+        target.getNotarization().getEnabled().set(true);
+        target.getSigning().getEnabled().set(false);
+
+        assertResolutionFails(project.getTasks().getByName("packageMacM1"), "signing.enabled = true");
+    }
+
+    @Test
+    public void signingNeedsAnAppBundle() throws Exception {
+        Project project = newProject();
+        Target.MacOs target = createMacTarget(extension(project), "macM1");
+        target.getAppBundle().set(false);
+        target.getSigning().getEnabled().set(true);
+
+        assertResolutionFails(project.getTasks().getByName("packageMacM1"), "appBundle = true");
+    }
+
+    @Test
+    public void rcodesignIsDownloadedForTheHostAndVerified() throws Exception {
+        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows"));
+        Project project = newProject();
+        ConstruoPluginExtension extension = extension(project);
+        String host = Rcodesign.INSTANCE.hostTarget(System.getProperty("os.name"), System.getProperty("os.arch"));
+
+        DownloadTask download = (DownloadTask) project.getTasks().getByName("downloadRcodesign");
+        VerifySha256Task verify = (VerifySha256Task) project.getTasks().getByName("verifyRcodesign");
+        Task extract = project.getTasks().getByName("extractRcodesign");
+
+        assertEquals(
+                "https://github.com/indygreg/apple-platform-rs/releases/download/apple-codesign%2F0.29.0/apple-codesign-0.29.0-"
+                        + host + ".tar.gz",
+                download.getSrc().get());
+        assertTrue(verify.getExpectedSha256().get().matches("[0-9a-f]{64}"));
+        assertTrue(taskDependencyNames(extract).contains("verifyRcodesign"));
+
+        // a version of its own has no known digest
+        extension.getRcodesign().getVersion().set("0.30.0");
+        assertTrue(download.getSrc().get().endsWith("/apple-codesign%2F0.30.0/apple-codesign-0.30.0-" + host + ".tar.gz"));
+        assertFalse(verify.getExpectedSha256().isPresent());
+        assertFalse(taskDependencyNames(extract).contains("verifyRcodesign"));
+        extension.getRcodesign().getSha256().set(repeat("c", 64));
+        assertTrue(taskDependencyNames(extract).contains("verifyRcodesign"));
+    }
+
+    @Test
+    public void localRcodesignSkipsTheDownload() throws Exception {
+        Project project = newProject();
+        ConstruoPluginExtension extension = extension(project);
+        Target.MacOs target = createMacTarget(extension, "macM1");
+        target.getSigning().getEnabled().set(true);
+        File rcodesign = new File(project.getProjectDir(), "tools/rcodesign");
+        extension.rcodesign(options -> options.getExecutable().set(rcodesign));
+
+        SignMacAppBundle sign = (SignMacAppBundle) project.getTasks().getByName("signMacAppBundleMacM1");
+
+        assertEquals(rcodesign, sign.getRcodesign().get().getAsFile());
+        assertFalse(taskDependencyNames(sign).contains("extractRcodesign"));
+    }
+
+    @Test
+    public void groovyDslConfiguresSigningAndNotarization() throws Exception {
+        File project = temporaryFolder.newFolder();
+        Files.write(new File(project, "settings.gradle").toPath(), "rootProject.name = 'probe'\n".getBytes(StandardCharsets.UTF_8));
+        String buildScript =
+                "import io.github.fourlastor.construo.Target\n"
+                        + "plugins { id 'java'; id 'io.github.fourlastor.construo' }\n"
+                        + "construo {\n"
+                        + "  name = 'probe'\n"
+                        + "  humanName = 'Probe'\n"
+                        + "  mainClass = 'example.Main'\n"
+                        + "  rcodesign { executable = file('tools/rcodesign') }\n"
+                        + "  targets.create('macM1', Target.MacOs) {\n"
+                        + "    architecture = Target.Architecture.AARCH64\n"
+                        + "    jdkUrl = 'https://not-used.example.test/jdk.tar.gz'\n"
+                        + "    identifier = 'example.Probe'\n"
+                        + "    signing {\n"
+                        + "      certificate = file('developer-id.p12')\n"
+                        + "    }\n"
+                        + "    notarization {\n"
+                        + "      enabled = true\n"
+                        + "      keyId = 'ABC123'\n"
+                        + "    }\n"
+                        + "  }\n"
+                        + "}\n"
+                        + "tasks.register('printSigning') {\n"
+                        + "  def sign = tasks.named('signMacAppBundleMacM1')\n"
+                        + "  def notarize = tasks.named('notarizeMacAppBundleMacM1')\n"
+                        + "  doLast {\n"
+                        + "    println \"signing ${sign.get().certificate.get().asFile.name} ${sign.get().hardenedRuntime.get()} "
+                        + "${sign.get().forNotarization.get()} ${sign.get().rcodesign.get().asFile.name} ${notarize.get().keyId.get()}\"\n"
+                        + "  }\n"
+                        + "}\n";
+        Files.write(new File(project, "build.gradle").toPath(), buildScript.getBytes(StandardCharsets.UTF_8));
+
+        String output = GradleRunner.create()
+                .withProjectDir(project)
+                .withPluginClasspath()
+                .withArguments("printSigning", "--stacktrace")
+                .build()
+                .getOutput();
+
+        assertTrue(output, output.contains("signing developer-id.p12 true true rcodesign ABC123"));
+    }
+
+    @Test
+    public void rcodesignBuildsMatchTheirHosts() {
+        assertEquals("x86_64-unknown-linux-musl", Rcodesign.INSTANCE.hostTarget("Linux", "amd64"));
+        assertEquals("aarch64-unknown-linux-musl", Rcodesign.INSTANCE.hostTarget("Linux", "aarch64"));
+        assertEquals("aarch64-apple-darwin", Rcodesign.INSTANCE.hostTarget("Mac OS X", "aarch64"));
+        assertEquals("x86_64-apple-darwin", Rcodesign.INSTANCE.hostTarget("Mac OS X", "x86_64"));
+        try {
+            Rcodesign.INSTANCE.hostTarget("Windows 11", "amd64");
+            fail("Expected Windows hosts to be refused");
+        } catch (IllegalArgumentException expected) {
+            assertTrue(expected.getMessage().contains("Linux or macOS"));
+        }
+    }
+
+    @Test
     public void verifiedDownloadsGateBothExtractions() throws Exception {
         Project project = newProject();
         ConstruoPluginExtension extension = extension(project);
@@ -319,6 +537,28 @@ public class ConstruoPluginContractTest {
         target.getArchitecture().set(Target.Architecture.X86_64);
         target.getJdkUrl().set("https://example.test/jdk.tar.gz");
         return target;
+    }
+
+    private static Target.MacOs createMacTarget(ConstruoPluginExtension extension, String name) {
+        extension.getHumanName().set("Game");
+        Target.MacOs target = extension.getTargets().create(name, Target.MacOs.class);
+        target.getArchitecture().set(Target.Architecture.AARCH64);
+        target.getJdkUrl().set("https://example.test/jdk.tar.gz");
+        target.getIdentifier().set("io.github.fourlastor.Game");
+        return target;
+    }
+
+    private static void assertResolutionFails(Task task, String message) {
+        try {
+            taskDependencyNames(task);
+            fail("Expected the dependencies of " + task.getName() + " not to resolve");
+        } catch (RuntimeException expected) {
+            Throwable cause = expected;
+            while (cause != null && (cause.getMessage() == null || !cause.getMessage().contains(message))) {
+                cause = cause.getCause();
+            }
+            assertNotNull("Expected a failure mentioning '" + message + "', got " + expected, cause);
+        }
     }
 
     private static Method assertGetter(Class<?> type, String name) {

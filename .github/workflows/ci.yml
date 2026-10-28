@@ -23,13 +23,59 @@ jobs:
         run: ./gradlew check
         working-directory: ./construo
       - name: Build test project
-        run: ./gradlew test:packageLinuxX64 test:packageMacM1 test:packageMacX64 test:packageWinX64
+        run: ./gradlew test:packageLinuxX64 test:packageMacM1 test:packageMacM1Hardened test:packageMacX64 test:packageWinX64
       - name: Artifact upload
         uses: actions/upload-artifact@v6
         with:
           name: outputs-${{ matrix.os }}
           path: test/build/construo/dist
           retention-days: 1
+  # The signed apps the build made, on Linux and on macOS, checked with Apple's own tools and started.
+  # macM1 is signed ad hoc; macM1Hardened with a self-signed certificate, so with the hardened
+  # runtime and the JVM's entitlements, as a notarized app is.
+  macos-signing:
+    needs: build
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        built-on: [ ubuntu-latest, macos-latest ]
+    name: Signed apps built on ${{ matrix.built-on }}
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: outputs-${{ matrix.built-on }}
+          path: dist
+      - name: Unpack
+        run: |
+          for target in macM1 macM1Hardened; do
+            ditto -x -k "dist/game-$target.zip" "apps/$target"
+          done
+      - name: Signatures
+        run: |
+          for target in macM1 macM1Hardened; do
+            codesign --verify --deep --strict --verbose=2 "apps/$target/Game.app"
+            codesign --display --verbose=4 "apps/$target/Game.app"
+          done
+          codesign --display --verbose=4 apps/macM1/Game.app 2>&1 | grep -q 'Signature=adhoc'
+          codesign --display --verbose=4 apps/macM1Hardened/Game.app 2>&1 | grep -q 'flags=.*runtime'
+          codesign --display --entitlements - apps/macM1Hardened/Game.app | tee entitlements.txt
+          grep -q 'com.apple.security.cs.allow-jit' entitlements.txt
+      # a signature that isn't Apple's is rejected here: that's Gatekeeper's side, not a fault
+      - name: Gatekeeper's verdict
+        run: spctl --assess --type execute --verbose=4 apps/*/Game.app || true
+      - name: Start the apps
+        timeout-minutes: 5
+        run: |
+          set -o pipefail
+          for target in macM1 macM1Hardened; do
+            "apps/$target/Game.app/Contents/MacOS/game" | tee "$target.out"
+            grep -q 'Hello world!' "$target.out"
+            # as a double click starts it
+            open -W -n --stdout "$PWD/$target-open.out" --stderr "$PWD/$target-open.err" "apps/$target/Game.app"
+            cat "$target-open.out" "$target-open.err"
+            grep -q 'Hello world!' "$target-open.out"
+          done
   check-format:
     runs-on: ubuntu-latest
     steps:

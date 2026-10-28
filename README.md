@@ -93,6 +93,24 @@ construo {
 }
 ```
 
+### rcodesign options
+
+macOS apps are signed and notarized with [rcodesign](https://github.com/indygreg/apple-platform-rs), which construo downloads for the build host when a target signs its app (see [signing and notarizing](#signing-and-notarizing)).
+
+```kotlin
+construo {
+    rcodesign {
+        // rcodesign release coordinates, defaults to 0.29.0 on GitHub Releases
+        version.set("0.29.0")
+        baseUrl.set("https://github.com/indygreg/apple-platform-rs/releases/download")
+        // SHA-256 of the archive for the build host, known for the default version
+        sha256.set("<rcodesign-sha256>")
+        // Optional, an rcodesign to use instead of downloading one
+        executable.set(file("/usr/local/bin/rcodesign"))
+    }
+}
+```
+
 ### Defining targets
 
 Targets define the output bundles Construo will generate. Each target must define its architecture and a JDK URL (a JRE is not sufficient). Optional SHA-256 digests can pin the JDK and Roast downloads; when configured, each digest is verified before its archive is extracted.
@@ -127,7 +145,18 @@ To define app category use `categoryName` option. For possible values see https:
 
 If you need any other key-value pairs in your Info.plist, use `additionalInfoFile` option. This should point to an xml file containing key-value pairs, formatted as they are in the Info.plist file.
 
-Optional `entitlementsFile` can be used to pick a file to define entitlements. This file will be copied into the app bundle and renamed to myAppName.entitlements . For possible values see https://developer.apple.com/documentation/bundleresources/entitlements
+Optional `entitlementsFile` can be used to pick a file to define entitlements. This file will be copied into the app bundle and renamed to myAppName.entitlements, unless construo signs the app, in which case the entitlements are part of its signature. For possible values see https://developer.apple.com/documentation/bundleresources/entitlements
+
+#### Signing and notarizing
+
+Construo can sign the app bundle, and have Apple notarize it, from Linux or macOS hosts (not Windows). Both are off by default.
+
+- `signing.enabled` signs the app. Without a certificate, the signature is ad hoc (self-signed): the app opens when it's copied to a Mac, but when it's downloaded macOS holds it back until it's allowed in System Settings > Privacy & Security (Open Anyway), or with `xattr -dr com.apple.quarantine Game.app`.
+- `signing.certificate` signs it with a certificate instead: a `.p12` file with the certificate and its private key, opened with `signing.certificatePassword`. rcodesign reads only the legacy encryption of `.p12` files: if it reports an incorrect password, export the certificate again with `openssl pkcs12 -export -legacy`.
+- `signing.hardenedRuntime` turns on the hardened runtime, which notarization requires. It defaults to `true` with a certificate. The app then gets the entitlements the JVM needs under it (`com.apple.security.cs.allow-jit`, `com.apple.security.cs.allow-unsigned-executable-memory` and `com.apple.security.cs.disable-library-validation`), unless `entitlementsFile` is set: then that file is used, and it must have them too.
+- `notarization.enabled` has Apple notarize the signed app, and staples the ticket to it, so it opens with no warning. It turns signing on, and needs a "Developer ID Application" certificate and an [App Store Connect API key](https://appstoreconnect.apple.com/access/integrations/api): its issuer ID, its key ID and its private key file (`AuthKey_<key ID>.p8`).
+
+When signing with a certificate, the native libraries inside jars (LWJGL's, for example) are signed too, as Apple's notary service checks them. A signed app keeps only its launcher in `Contents/MacOS`, where code signing expects code: the runtime, the config and the jar are in `Contents/Resources`, linked from `Contents/MacOS`. The same signing settings can be shared by all macOS targets with `targets.withType<Target.MacOs>().configureEach { signing { ... } }`.
 
 <details open>
 <summary>Kotlin DSL</summary>
@@ -163,6 +192,19 @@ construo {
             entitlementsFile.set(project.file("path/to/mac-entitlements.xml"))
             // Optional: an xml file containing additional key-value pairs to be added to the Info.plist file
             additionalInfoFile.set(project.file("path/to/mac-additional.xml"))
+            // Optional: sign the app, ad hoc without a certificate
+            signing {
+                enabled.set(true)
+                certificate.set(project.file("path/to/developer-id.p12"))
+                certificatePassword.set(providers.environmentVariable("MAC_CERTIFICATE_PASSWORD"))
+            }
+            // Optional: have Apple notarize the signed app, with an App Store Connect API key
+            notarization {
+                enabled.set(true)
+                issuerId.set(providers.environmentVariable("NOTARY_ISSUER_ID"))
+                keyId.set(providers.environmentVariable("NOTARY_KEY_ID"))
+                privateKeyFile.set(project.file("path/to/AuthKey_KEYID.p8"))
+            }
         }
         create<Target.Windows>("winX64") {
             architecture.set(Target.Architecture.X86_64)
@@ -217,6 +259,19 @@ construo {
             entitlementsFile.set(project.file("path/to/mac-entitlements.xml"))
             // Optional: an xml file containing additional key-value pairs to be added to the Info.plist file
             additionalInfoFile.set(project.file("path/to/mac-additional.xml"))
+            // Optional: sign the app, ad hoc without a certificate
+            signing {
+                enabled.set(true)
+                certificate.set(project.file("path/to/developer-id.p12"))
+                certificatePassword.set(providers.environmentVariable("MAC_CERTIFICATE_PASSWORD"))
+            }
+            // Optional: have Apple notarize the signed app, with an App Store Connect API key
+            notarization {
+                enabled.set(true)
+                issuerId.set(providers.environmentVariable("NOTARY_ISSUER_ID"))
+                keyId.set(providers.environmentVariable("NOTARY_KEY_ID"))
+                privateKeyFile.set(project.file("path/to/AuthKey_KEYID.p8"))
+            }
         }
         create("winX64", Target.Windows) {
             architecture.set(Target.Architecture.X86_64)
@@ -242,4 +297,4 @@ You can set a `ProguardTask` as the `jarTask` name, in that case, you will also 
 
 ### Packaging the targets
 
-Each defined target will generate a `packageXXX` task, where `XXX` is the capitalized name of the target (for example: `packageLinuxX64`). Running the task will produce a ZIP inside the `outputDir` folder containing the fully packaged app, unless that target sets an explicit `archiveFile`.
+Each defined target will generate a `packageXXX` task, where `XXX` is the capitalized name of the target (for example: `packageLinuxX64`). Running the task will produce a ZIP inside the `outputDir` folder containing the fully packaged app, unless that target sets an explicit `archiveFile`. A macOS target that signs or notarizes its app does it before packaging, with its `signMacAppBundleXXX` and `notarizeMacAppBundleXXX` tasks.
