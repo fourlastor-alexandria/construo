@@ -38,7 +38,7 @@ internal object Rcodesign {
             "amd64", "x86_64" -> "x86_64"
             "aarch64", "arm64" -> "aarch64"
             else -> throw IllegalArgumentException(
-                "There's no rcodesign build for $osName ($osArch): set construo.rcodesign.executable to one"
+                "There's no rcodesign build for $osName ($osArch): set construo.rcodesign.executable to one",
             )
         }
         return "$arch-$os"

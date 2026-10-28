@@ -13,7 +13,7 @@ internal object PackageFiles {
             normalized.isNotBlank() &&
                 !normalized.startsWith('/') &&
                 !WINDOWS_ABSOLUTE_PATH.containsMatchIn(normalized) &&
-                normalized.split('/').none { it.isEmpty() || it == "." || it == ".." }
+                normalized.split('/').none { it.isEmpty() || it == "." || it == ".." },
         ) {
             "$label '$path' must be a normalized relative path within the distribution"
         }

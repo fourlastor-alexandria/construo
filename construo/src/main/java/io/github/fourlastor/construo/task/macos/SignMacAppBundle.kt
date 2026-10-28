@@ -185,7 +185,7 @@ abstract class SignMacAppBundle @Inject constructor(
                 is JarNatives.Scan.None -> Unit
                 is JarNatives.Scan.SignedJar -> logger.warn(
                     "${jar.relativeTo(app)} is a signed jar with native libraries for macOS: they're left as they are, " +
-                        "and notarization may refuse them"
+                        "and notarization may refuse them",
                 )
                 is JarNatives.Scan.Natives -> JarNatives.sign(jar, scan.entries, File(workDir, "jar-$index")) { native ->
                     val args = mutableListOf("sign")
@@ -220,7 +220,7 @@ abstract class SignMacAppBundle @Inject constructor(
                 ""
             }
             throw GradleException(
-                "rcodesign couldn't $action:\n${tail.joinToString("\n")}$hint\nFull log: ${log.absolutePath}"
+                "rcodesign couldn't $action:\n${tail.joinToString("\n")}$hint\nFull log: ${log.absolutePath}",
             )
         }
     }

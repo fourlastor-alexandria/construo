@@ -142,5 +142,4 @@ abstract class PackageTask @Inject constructor(
         .map { it.toZipPath() }
         .filter { it.isNotEmpty() }
         .joinToString("/")
-
 }

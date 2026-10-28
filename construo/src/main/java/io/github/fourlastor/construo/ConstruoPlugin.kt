@@ -58,17 +58,17 @@ class ConstruoPlugin : Plugin<Project> {
                 Rcodesign.defaultSha256(version, target)
                     ?.let { project.provider { it } }
                     ?: project.objects.property(String::class.java)
-            }
+            },
         )
         val downloadRcodesign = tasks.register("downloadRcodesign", DownloadTask::class.java) {
             src.set(
                 rcodesignOptions.baseUrl.zip(rcodesignOptions.version) { baseUrl, version -> baseUrl to version }
-                    .zip(rcodesignTarget) { (baseUrl, version), target -> Rcodesign.url(baseUrl, version, target) }
+                    .zip(rcodesignTarget) { (baseUrl, version), target -> Rcodesign.url(baseUrl, version, target) },
             )
             dest.set(
                 rcodesignDir.zip(rcodesignOptions.version.zip(rcodesignTarget, Rcodesign::archiveName)) { dir, archive ->
                     dir.file(archive)
-                }
+                },
             )
         }
         val verifyRcodesign = tasks.register("verifyRcodesign", VerifySha256Task::class.java) {
@@ -356,7 +356,7 @@ class ConstruoPlugin : Plugin<Project> {
                             icon.set(target.macIcon)
                             // a signature carries the entitlements, and a file at the root of Contents is left out of its seal
                             entitlementsFileSource.set(
-                                signing.enabled.flatMap { if (it) project.objects.fileProperty() else target.entitlementsFile }
+                                signing.enabled.flatMap { if (it) project.objects.fileProperty() else target.entitlementsFile },
                             )
                             entitlementsFileDestination.set(entitlementsFileName)
                             plist.set(pListFile)
@@ -460,7 +460,7 @@ class ConstruoPlugin : Plugin<Project> {
                         )
                         // a signed bundle has them already, within its seal
                         packageFiles.set(
-                            signing.enabled.flatMap { if (it) project.provider { emptyMap<String, RegularFile>() } else packageExtraFiles }
+                            signing.enabled.flatMap { if (it) project.provider { emptyMap<String, RegularFile>() } else packageExtraFiles },
                         )
                     }
                 }
