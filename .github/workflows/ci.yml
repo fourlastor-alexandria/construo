@@ -72,7 +72,11 @@ jobs:
             "apps/$target/Game.app/Contents/MacOS/game" | tee "$target.out"
             grep -q 'Hello world!' "$target.out"
             # as a double click starts it
-            open -W -n --stdout "$PWD/$target-open.out" --stderr "$PWD/$target-open.err" "apps/$target/Game.app"
+            open -n --stdout "$PWD/$target-open.out" --stderr "$PWD/$target-open.err" "apps/$target/Game.app"
+            for _ in $(seq 60); do
+              grep -q 'Hello world!' "$target-open.out" 2>/dev/null && break
+              sleep 1
+            done
             cat "$target-open.out" "$target-open.err"
             grep -q 'Hello world!' "$target-open.out"
           done
