@@ -31,17 +31,23 @@ abstract class PackageTask @Inject constructor(
 
     @get:Internal
     abstract val destinationDirectory: DirectoryProperty
+
     @get:Internal
     abstract val archiveFileName: Property<String>
+
     @get:OutputFile
     abstract val archiveFile: RegularFileProperty
+
     @get:InputDirectory
     abstract val from: DirectoryProperty
+
     @get:Input
     @get:Optional
     abstract val into: Property<String>
+
     @get:InputFile
     abstract val executable: RegularFileProperty
+
     @get:Internal
     abstract val packageFiles: MapProperty<String, RegularFile>
 
@@ -96,7 +102,11 @@ abstract class PackageTask @Inject constructor(
                 if (inputFile.absolutePath == executableFile.absolutePath || inputFile.name.startsWith("jspawnhelper") || inputFile.name.startsWith("jexec")) {
                     entry.unixMode = UnixStat.FILE_FLAG or "755".toInt(radix = 8)
                 } else {
-                    entry.unixMode = if (inputFile.isDirectory) { UnixStat.DIR_FLAG or "755".toInt(radix = 8) } else { UnixStat.FILE_FLAG or "644".toInt(radix = 8) } 
+                    entry.unixMode = if (inputFile.isDirectory) {
+                        UnixStat.DIR_FLAG or "755".toInt(radix = 8)
+                    } else {
+                        UnixStat.FILE_FLAG or "644".toInt(radix = 8)
+                    }
                 }
                 zipOutStream.putArchiveEntry(entry)
                 if (!inputFile.isDirectory) {
@@ -127,7 +137,7 @@ abstract class PackageTask @Inject constructor(
             normalized.isNotBlank() &&
                 !normalized.startsWith('/') &&
                 !WINDOWS_ABSOLUTE_PATH.containsMatchIn(normalized) &&
-                normalized.split('/').none { it.isEmpty() || it == "." || it == ".." }
+                normalized.split('/').none { it.isEmpty() || it == "." || it == ".." },
         ) {
             "$label '$path' must be a normalized relative path within the distribution"
         }
@@ -143,5 +153,4 @@ abstract class PackageTask @Inject constructor(
     companion object {
         private val WINDOWS_ABSOLUTE_PATH = Regex("^[A-Za-z]:")
     }
-
 }

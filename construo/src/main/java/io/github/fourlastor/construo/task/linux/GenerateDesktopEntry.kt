@@ -34,7 +34,7 @@ abstract class GenerateDesktopEntry : BaseTask() {
                 X-AppImage-Name=${humanName.get()}
                 X-AppImage-Version=${version.get()}
                 X-AppImage-Arch=${architecture.get().arch}
-                """.trimIndent()
+                """.trimIndent(),
             )
             if (icon.isPresent) {
                 appendLine("Icon=${icon.get().asFile.nameWithoutExtension}")
@@ -43,12 +43,12 @@ abstract class GenerateDesktopEntry : BaseTask() {
                 """
                 Type=Application
                 Categories=Game;
-                """.trimIndent()
+                """.trimIndent(),
             )
         }
         outputFile.get().asFile.writeText(
             text = script,
-            charset = Charsets.UTF_8
+            charset = Charsets.UTF_8,
         )
     }
 }

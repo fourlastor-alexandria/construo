@@ -13,7 +13,7 @@ import org.gradle.api.provider.Property
 import javax.inject.Inject
 
 abstract class ConstruoPluginExtension @Inject constructor(
-    objectFactory: ObjectFactory
+    objectFactory: ObjectFactory,
 ) {
     abstract val name: Property<String>
     abstract val humanName: Property<String>

@@ -12,13 +12,15 @@ import javax.inject.Inject
 
 abstract class ReplaceWinIconTask @Inject constructor(
     private val fileSystemOperations: FileSystemOperations,
-): BaseTask() {
+) : BaseTask() {
 
     @get:InputFile
     abstract val inputFile: RegularFileProperty
+
     @get:InputFile
     @get:Optional
     abstract val inputIcon: RegularFileProperty
+
     @get:OutputFile
     abstract val outputFile: RegularFileProperty
 

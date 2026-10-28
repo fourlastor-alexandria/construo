@@ -26,7 +26,7 @@ class ConstruoPlugin : Plugin<Project> {
 
     private data class DownloadJdkOptions(
         val url: String,
-        val filename: String
+        val filename: String,
     )
 
     override fun apply(project: Project) {
@@ -64,7 +64,7 @@ class ConstruoPlugin : Plugin<Project> {
                 val extension = if (it.endsWith(".zip")) "zip" else "tar.gz"
                 DownloadJdkOptions(
                     url = it,
-                    filename = "${target.name}.$extension"
+                    filename = "${target.name}.$extension",
                 )
             }
 
@@ -103,13 +103,15 @@ class ConstruoPlugin : Plugin<Project> {
                 .map { tasks.getByName(it) }
                 .orElse(project.provider { (tasks.findByName("shadowJar") ?: tasks.findByName("jar")) })
 
-            val mainClass = pluginExtension.mainClass.orElse(selectedTask.map {
-                if (it is Jar) {
-                    it.manifest.attributes["Main-Class"] as String
-                } else {
-                    throw IllegalStateException("Setting a custom task which is not a Jar task requires manually setting the mainClass property")
-                }
-            })
+            val mainClass = pluginExtension.mainClass.orElse(
+                selectedTask.map {
+                    if (it is Jar) {
+                        it.manifest.attributes["Main-Class"] as String
+                    } else {
+                        throw IllegalStateException("Setting a custom task which is not a Jar task requires manually setting the mainClass property")
+                    }
+                },
+            )
 
             val jarFileLocation = selectedTask.flatMap {
                 when (it) {
@@ -118,10 +120,10 @@ class ConstruoPlugin : Plugin<Project> {
                     else -> throw IllegalStateException("Only supported custom task types are Jar and ProguardTask, it was ${it.javaClass}")
                 }
             }
-            
+
             fun createRuntimeImageTask(
                 name: String,
-                withoutNativeCommands: Boolean, 
+                withoutNativeCommands: Boolean,
                 targetRuntimeImageBuildDir: Provider<Directory>,
             ) = tasks.register(name, CreateRuntimeImageTask::class.java) {
                 dependsOn(unzipJdk, selectedTask)
@@ -139,12 +141,12 @@ class ConstruoPlugin : Plugin<Project> {
             val createRuntimeImage = createRuntimeImageTask(
                 "createRuntimeImage$capitalized",
                 withoutNativeCommands = true,
-                targetRuntimeImageBuildDir
+                targetRuntimeImageBuildDir,
             )
             createRuntimeImageTask(
                 "createRuntimeImageWithNatives$capitalized",
                 withoutNativeCommands = false,
-                targetRuntimeImageWithNativeCommandsBuildDir
+                targetRuntimeImageWithNativeCommandsBuildDir,
             )
 
             fun Target.roastName(): Provider<String> = when (this) {
@@ -271,7 +273,7 @@ class ConstruoPlugin : Plugin<Project> {
                         archiveFileName.set(targetArchiveFileName)
                         destinationDirectory.set(pluginExtension.outputDir)
                         archiveFile.convention(
-                            target.archiveFile.orElse(destinationDirectory.file(archiveFileName))
+                            target.archiveFile.orElse(destinationDirectory.file(archiveFileName)),
                         )
                         from.set(targetRoastDir)
                         into.set(pluginExtension.zipFolder)
@@ -300,7 +302,7 @@ class ConstruoPlugin : Plugin<Project> {
                         additional.set(target.additionalInfoFile)
                     }
 
-                    val entitlementsFileName = pluginExtension.humanName.map {"$it.entitlements"}
+                    val entitlementsFileName = pluginExtension.humanName.map { "$it.entitlements" }
 
                     val buildMacAppBundle =
                         tasks.register("buildMacAppBundle$capitalized", BuildMacAppBundle::class.java) {
@@ -318,7 +320,7 @@ class ConstruoPlugin : Plugin<Project> {
                         archiveFileName.set(targetArchiveFileName)
                         destinationDirectory.set(pluginExtension.outputDir)
                         archiveFile.convention(
-                            target.archiveFile.orElse(destinationDirectory.file(archiveFileName))
+                            target.archiveFile.orElse(destinationDirectory.file(archiveFileName)),
                         )
                         dependsOn(
                             target.appBundle.map { if (it) buildMacAppBundle else packageRoast },
@@ -341,7 +343,7 @@ class ConstruoPlugin : Plugin<Project> {
                                 } else {
                                     pluginExtension.zipFolder
                                 }
-                            }
+                            },
                         )
                         executable.set(
                             target.appBundle.flatMap {
@@ -354,7 +356,7 @@ class ConstruoPlugin : Plugin<Project> {
                                         directory.file(targetRoastExeName)
                                     }
                                 }
-                            }
+                            },
                         )
                         packageFiles.set(packageExtraFiles)
                     }

@@ -72,10 +72,10 @@ abstract class CreateRuntimeImageTask @Inject constructor(
             emptyList()
         }
         val modulesList = (
-                modules.getOrElse(emptyList())
-                + modulesFromJar
-                + defaultCryptoModules
-        ).distinct()
+            modules.getOrElse(emptyList()) +
+                modulesFromJar +
+                defaultCryptoModules
+            ).distinct()
 
         execOperations.exec {
             val root = if (targetJdkRoot.isPresent) {
@@ -88,57 +88,57 @@ abstract class CreateRuntimeImageTask @Inject constructor(
                 val modulesCommaSeparated = modulesList.joinToString(separator = ",")
                 arrayOf(
                     "--add-modules",
-                    modulesCommaSeparated
+                    modulesCommaSeparated,
                 )
             } else {
                 arrayOf()
             }
-            
+
             val stripNativeCommandsArg = if (stripNativeCommands.get()) arrayOf("--strip-native-commands") else arrayOf()
-            
-            
+
             val jlinkArgs = arrayOf(
-                "--no-header-files"
+                "--no-header-files",
             ) + stripNativeCommandsArg + arrayOf(
                 "--no-man-pages",
                 "--compress=1",
-                "--strip-debug"
+                "--strip-debug",
             ) + addModulesArg + arrayOf(
                 "--module-path",
                 modulesPath,
                 "--output",
-                outputFile.absolutePath
+                outputFile.absolutePath,
             )
-            
+
             commandLine(
                 File(javaHome, executableForOs("bin/jlink")).absolutePath,
-                *jlinkArgs
+                *jlinkArgs,
             )
         }
     }
 
-	private fun guessModulesFromJar(javaHome: File): List<String> = executeInJdk(
-		javaHome,
-		"jdeps",
-		"--ignore-missing-deps",
-		"--multi-release", multiReleaseVersion.orNull ?: getJvmVersion(javaHome),
-		"--list-deps",
-		jarFile.get().asFile.absolutePath
-	).splitToSequence("\n").map { it.trim() }.filter { it.isNotBlank() }.toList()
+    private fun guessModulesFromJar(javaHome: File): List<String> = executeInJdk(
+        javaHome,
+        "jdeps",
+        "--ignore-missing-deps",
+        "--multi-release",
+        multiReleaseVersion.orNull ?: getJvmVersion(javaHome),
+        "--list-deps",
+        jarFile.get().asFile.absolutePath,
+    ).splitToSequence("\n").map { it.trim() }.filter { it.isNotBlank() }.toList()
 
-	private fun getJvmVersion(javaHome: File): String = executeInJdk(javaHome, "javap", "-version").split(".")[0]
+    private fun getJvmVersion(javaHome: File): String = executeInJdk(javaHome, "javap", "-version").split(".")[0]
 
-	private fun executeInJdk(javaHome: File, command: String, vararg args: String): String = ByteArrayOutputStream().use {
-		execOperations.exec {
-			setWorkingDir(jdkRoot)
-			standardOutput = it
-			commandLine(
-				File(javaHome, executableForOs("bin/$command")).absolutePath,
-				*args
-			)
-		}
-		it.toByteArray().toString(Charset.defaultCharset())
-	}
+    private fun executeInJdk(javaHome: File, command: String, vararg args: String): String = ByteArrayOutputStream().use {
+        execOperations.exec {
+            setWorkingDir(jdkRoot)
+            standardOutput = it
+            commandLine(
+                File(javaHome, executableForOs("bin/$command")).absolutePath,
+                *args,
+            )
+        }
+        it.toByteArray().toString(Charset.defaultCharset())
+    }
 
     private fun executableForOs(executable: String): String = OperatingSystem.current().let { currentOs ->
         if (currentOs.isWindows) {
