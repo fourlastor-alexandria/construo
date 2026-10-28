@@ -20,7 +20,7 @@ import java.nio.file.StandardCopyOption
 import javax.inject.Inject
 
 abstract class RoastTask @Inject constructor(
-    private val fileSystemOperations: FileSystemOperations
+    private val fileSystemOperations: FileSystemOperations,
 ) : BaseTask() {
 
     @get:InputDirectory
@@ -76,9 +76,9 @@ abstract class RoastTask @Inject constructor(
                         runOnFirstThread = runOnFirstThread.get(),
                         vmArgs = vmArgs.get(),
                         useZgcIfSupportedOs = useZgc.get(),
-                        useMainAsContextClassLoader = useMainAsContextClassLoader.get()
-                    )
-                )
+                        useMainAsContextClassLoader = useMainAsContextClassLoader.get(),
+                    ),
+                ),
             )
         }
 
@@ -109,6 +109,6 @@ abstract class RoastTask @Inject constructor(
         val runOnFirstThread: Boolean,
         val useZgcIfSupportedOs: Boolean,
         val useMainAsContextClassLoader: Boolean,
-        val vmArgs: List<String>
+        val vmArgs: List<String>,
     )
 }

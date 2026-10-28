@@ -13,7 +13,7 @@ import org.gradle.process.ExecOperations
 import javax.inject.Inject
 
 abstract class BuildAppImage @Inject constructor(
-    private val execOperations: ExecOperations
+    private val execOperations: ExecOperations,
 ) : BaseTask() {
 
     @get:InputDirectory
@@ -43,7 +43,7 @@ abstract class BuildAppImage @Inject constructor(
                 appImageTemplateDirPath,
                 targetPath,
                 "--runtime-file",
-                "./${runtimeName(architecture)}"
+                "./${runtimeName(architecture)}",
             )
         }
     }

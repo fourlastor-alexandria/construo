@@ -19,8 +19,14 @@ repositories {
 spotless {
     isEnforceCheck = false
     kotlin {
-        ktlint()
-        target("src")
+        // as in .editorconfig, which this ktlint doesn't read
+        ktlint().editorConfigOverride(
+            mapOf(
+                "ij_kotlin_allow_trailing_comma" to true,
+                "ij_kotlin_allow_trailing_comma_on_call_site" to true,
+            ),
+        )
+        target("src/**/*.kt")
     }
 }
 
