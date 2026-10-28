@@ -13,7 +13,7 @@ import org.gradle.api.tasks.TaskAction
 import javax.inject.Inject
 
 abstract class PrepareAppImageFiles @Inject constructor(
-    private val fileSystemOperations: FileSystemOperations
+    private val fileSystemOperations: FileSystemOperations,
 ) : BaseTask() {
 
     @get:Input abstract val binaryName: Property<String>

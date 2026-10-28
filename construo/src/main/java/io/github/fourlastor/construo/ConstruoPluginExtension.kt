@@ -15,7 +15,7 @@ import org.gradle.api.tasks.Nested
 import javax.inject.Inject
 
 abstract class ConstruoPluginExtension @Inject constructor(
-    objectFactory: ObjectFactory
+    objectFactory: ObjectFactory,
 ) {
     abstract val name: Property<String>
     abstract val humanName: Property<String>

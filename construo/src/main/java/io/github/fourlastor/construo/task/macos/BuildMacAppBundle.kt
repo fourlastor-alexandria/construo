@@ -14,7 +14,7 @@ import org.gradle.api.tasks.TaskAction
 import javax.inject.Inject
 
 abstract class BuildMacAppBundle @Inject constructor(
-    private val fileSystemOperations: FileSystemOperations
+    private val fileSystemOperations: FileSystemOperations,
 ) : BaseTask() {
 
     @get:InputDirectory
@@ -29,9 +29,11 @@ abstract class BuildMacAppBundle @Inject constructor(
     @get:OutputDirectory
     abstract val outputDirectory: DirectoryProperty
 
-    @get:Optional @get:InputFile abstract val entitlementsFileSource: RegularFileProperty
-    @get:Optional @get:OutputFile abstract val entitlementsFileDestination: Property<String>
+    @get:Optional @get:InputFile
+    abstract val entitlementsFileSource: RegularFileProperty
 
+    @get:Optional @get:OutputFile
+    abstract val entitlementsFileDestination: Property<String>
 
     @TaskAction
     fun run() {
@@ -43,7 +45,7 @@ abstract class BuildMacAppBundle @Inject constructor(
                 eachFile {
                     if (file.parentFile.name.contains('.')) {
                         val dirSegment = relativePath.segments[relativePath.segments.size - 2]
-                        relativePath.segments[relativePath.segments.size - 2] = dirSegment.replace('.','_')
+                        relativePath.segments[relativePath.segments.size - 2] = dirSegment.replace('.', '_')
                     }
                 }
             }
@@ -56,20 +58,16 @@ abstract class BuildMacAppBundle @Inject constructor(
             }
             into(
                 outputDirectory.get()
-                    .dir("Contents")
+                    .dir("Contents"),
             )
-            if ((entitlementsFileSource.isPresent) && (entitlementsFileDestination.isPresent))
-            {
+            if ((entitlementsFileSource.isPresent) && (entitlementsFileDestination.isPresent)) {
                 from(entitlementsFileSource)
                 into(
                     outputDirectory.get()
-                        .dir("Contents")
+                        .dir("Contents"),
                 )
-                rename (entitlementsFileSource.get().asFile.name,entitlementsFileDestination.get() )
-
+                rename(entitlementsFileSource.get().asFile.name, entitlementsFileDestination.get())
             }
-
         }
-
     }
 }

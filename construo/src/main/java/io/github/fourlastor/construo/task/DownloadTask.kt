@@ -14,7 +14,7 @@ import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 
-abstract class DownloadTask: BaseTask() {
+abstract class DownloadTask : BaseTask() {
 
     @get:Input
     abstract val src: Property<String>

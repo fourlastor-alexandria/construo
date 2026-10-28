@@ -26,9 +26,11 @@ abstract class GeneratePlist : BaseTask() {
     @get:Optional @get:Input
     abstract val categoryName: Property<String>
 
-    @get:Optional @get:Input abstract val buildNumber: Property<String>
+    @get:Optional @get:Input
+    abstract val buildNumber: Property<String>
 
-    @get:Optional @get:Input abstract val versionNumber: Property<String>
+    @get:Optional @get:Input
+    abstract val versionNumber: Property<String>
 
     @get:Input abstract val executable: Property<String>
 
@@ -49,7 +51,7 @@ abstract class GeneratePlist : BaseTask() {
             doctype(
                 "plist",
                 publicId = "-//Apple Computer//DTD PLIST 1.0//EN",
-                systemId = "http://www.apple.com/DTDs/PropertyList-1.0.dtd"
+                systemId = "http://www.apple.com/DTDs/PropertyList-1.0.dtd",
             )
             "dict" {
                 "key" { -"CFBundleGetInfoString" }
@@ -93,15 +95,13 @@ abstract class GeneratePlist : BaseTask() {
                     "string" { -copyright.get() }
                 }
 
-                if (additional.isPresent)
-                {
-                    //read the xml for additional key-value pairs
+                if (additional.isPresent) {
+                    // read the xml for additional key-value pairs
                     val additionalXML = org.redundent.kotlin.xml.parse(additional.get().asFile)
-                    for (child in additionalXML.children)
-                    {
-                        //add to the dict in the plist
-                        //note that this has doesn't have any proper validation
-                        //so we rely on the given xml being validly formatted
+                    for (child in additionalXML.children) {
+                        // add to the dict in the plist
+                        // note that this has doesn't have any proper validation
+                        // so we rely on the given xml being validly formatted
                         if (child is Node) addNode(child)
                     }
                 }
@@ -110,8 +110,7 @@ abstract class GeneratePlist : BaseTask() {
 
         outputFile.get().asFile.writeText(
             text = plist.toString(printOptions = PrintOptions(pretty = true, singleLineTextElements = true)),
-            charset = Charsets.UTF_8
+            charset = Charsets.UTF_8,
         )
-
     }
 }

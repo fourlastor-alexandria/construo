@@ -27,7 +27,7 @@ abstract class GenerateAppRun : BaseTask() {
         val file = outputFile.get().asFile
         file.writeText(
             text = script,
-            charset = Charsets.UTF_8
+            charset = Charsets.UTF_8,
         )
         file.setExecutable(true)
     }
