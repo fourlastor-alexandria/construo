@@ -22,6 +22,8 @@ import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
+import java.nio.file.Files
+import java.util.stream.Collectors
 import javax.inject.Inject
 
 abstract class PackageTask @Inject constructor(
@@ -56,23 +58,16 @@ abstract class PackageTask @Inject constructor(
     fun getPackageFileInputs(): FileCollection = objectFactory.fileCollection().from(packageFiles.map { it.values })
 
     @Input
-    fun getPackageFileMappings(): Map<String, String> = packageFiles.get().mapValues { (_, sourceFile) ->
-        val sourcePath = sourceFile.asFile.toPath().toAbsolutePath().normalize()
-        val projectPath = projectLayout.projectDirectory.asFile.toPath().toAbsolutePath().normalize()
-        if (sourcePath.startsWith(projectPath)) {
-            projectPath.relativize(sourcePath).toString()
-        } else {
-            sourcePath.toString()
-        }
-    }
+    fun getPackageFileMappings(): Map<String, String> =
+        PackageFiles.mappings(packageFiles.get(), projectLayout.projectDirectory.asFile)
 
     @TaskAction
     fun run() {
         val baseDir = into.orNull
             ?.takeUnless { it.isBlank() }
-            ?.let { normalizeArchivePath("Archive root", it) }
+            ?.let { PackageFiles.normalize("Archive root", it) }
         val packageFileMappings = packageFiles.get().map { (destinationPath, sourceFile) ->
-            normalizeArchivePath("Package file destination", destinationPath) to sourceFile
+            PackageFiles.normalize("Package file destination", destinationPath) to sourceFile
         }
         val destination = archiveFile.get().asFile
         val executableFile = executable.get().asFile
@@ -90,14 +85,25 @@ abstract class PackageTask @Inject constructor(
         destination.parentFile.mkdirs()
         val executableParent = executableFile.parentFile.toRelativeString(inputDir).toZipPath()
         val writtenEntries = mutableSetOf<String>()
+        // links aren't followed: a signed macOS app bundle seals them as links
+        val inputPaths = Files.walk(inputDir.toPath()).use { it.collect(Collectors.toList()) }
         ZipArchiveOutputStream(destination.outputStream().buffered()).use { zipOutStream ->
-            inputDir.walkTopDown().forEach { inputFile ->
+            inputPaths.forEach { path ->
+                val inputFile = path.toFile()
                 val relativePath = inputFile.toRelativeString(inputDir).toZipPath()
                 val entryName = zipPath(baseDir, relativePath)
                 if (entryName.isEmpty()) {
                     return@forEach
                 }
                 check(writtenEntries.add(entryName)) { "Duplicate package entry: $entryName" }
+                if (Files.isSymbolicLink(path)) {
+                    val link = ZipArchiveEntry(entryName)
+                    link.unixMode = UnixStat.LINK_FLAG or "755".toInt(radix = 8)
+                    zipOutStream.putArchiveEntry(link)
+                    zipOutStream.write(Files.readSymbolicLink(path).toString().replace('\\', '/').toByteArray())
+                    zipOutStream.closeArchiveEntry()
+                    return@forEach
+                }
                 val entry = ZipArchiveEntry(inputFile, entryName)
                 if (inputFile.absolutePath == executableFile.absolutePath || inputFile.name.startsWith("jspawnhelper") || inputFile.name.startsWith("jexec")) {
                     entry.unixMode = UnixStat.FILE_FLAG or "755".toInt(radix = 8)
@@ -131,26 +137,9 @@ abstract class PackageTask @Inject constructor(
 
     private fun String.toZipPath(): String = replace('\\', '/').trim('/')
 
-    private fun normalizeArchivePath(label: String, path: String): String {
-        val normalized = path.replace('\\', '/')
-        require(
-            normalized.isNotBlank() &&
-                !normalized.startsWith('/') &&
-                !WINDOWS_ABSOLUTE_PATH.containsMatchIn(normalized) &&
-                normalized.split('/').none { it.isEmpty() || it == "." || it == ".." },
-        ) {
-            "$label '$path' must be a normalized relative path within the distribution"
-        }
-        return normalized
-    }
-
     private fun zipPath(vararg parts: String?): String = parts
         .filterNotNull()
         .map { it.toZipPath() }
         .filter { it.isNotEmpty() }
         .joinToString("/")
-
-    companion object {
-        private val WINDOWS_ABSOLUTE_PATH = Regex("^[A-Za-z]:")
-    }
 }
