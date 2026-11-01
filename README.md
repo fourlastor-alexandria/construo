@@ -78,8 +78,8 @@ Construo uses [roast](https://github.com/fourlastor-alexandria/roast/) to run th
 ```kotlin
 construo {
     roast {
-        // Roast release coordinates, defaults to v1.6.0 on GitHub Releases
-        version.set("v1.6.0")
+        // Roast release coordinates, defaults to v1.7.0 on GitHub Releases
+        version.set("v1.7.0")
         baseUrl.set("https://github.com/fourlastor-alexandria/roast/releases/download")
         // MacOS only, whether to run the jvm on the main thread, defaults to true
         runOnFirstThread.set(false)
