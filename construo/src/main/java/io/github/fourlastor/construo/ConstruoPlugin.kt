@@ -7,11 +7,16 @@ import io.github.fourlastor.construo.task.VerifySha256Task
 import io.github.fourlastor.construo.task.jvm.CreateRuntimeImageTask
 import io.github.fourlastor.construo.task.jvm.RoastTask
 import io.github.fourlastor.construo.task.macos.BuildMacAppBundle
+import io.github.fourlastor.construo.task.macos.ExtractRcodesign
 import io.github.fourlastor.construo.task.macos.GeneratePlist
+import io.github.fourlastor.construo.task.macos.NotarizeMacAppBundle
+import io.github.fourlastor.construo.task.macos.Rcodesign
+import io.github.fourlastor.construo.task.macos.SignMacAppBundle
 import io.github.fourlastor.construo.task.windows.ReplaceWinIconTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.file.Directory
+import org.gradle.api.file.RegularFile
 import org.gradle.api.plugins.ApplicationPlugin
 import org.gradle.api.plugins.JavaApplication
 import org.gradle.api.provider.Provider
@@ -44,6 +49,40 @@ class ConstruoPlugin : Plugin<Project> {
             pluginExtension.mainClass.set(javaApplication.mainClass)
         }
 
+        // rcodesign signs macOS app bundles: its build for this host is downloaded once, unless one is given
+        val rcodesignOptions = pluginExtension.rcodesign
+        val rcodesignDir = baseBuildDir.map { it.dir("rcodesign") }
+        val rcodesignTarget = project.provider { Rcodesign.hostTarget() }
+        rcodesignOptions.sha256.convention(
+            rcodesignOptions.version.zip(rcodesignTarget) { version, target -> version to target }.flatMap { (version, target) ->
+                Rcodesign.defaultSha256(version, target)
+                    ?.let { project.provider { it } }
+                    ?: project.objects.property(String::class.java)
+            },
+        )
+        val downloadRcodesign = tasks.register("downloadRcodesign", DownloadTask::class.java) {
+            src.set(
+                rcodesignOptions.baseUrl.zip(rcodesignOptions.version) { baseUrl, version -> baseUrl to version }
+                    .zip(rcodesignTarget) { (baseUrl, version), target -> Rcodesign.url(baseUrl, version, target) },
+            )
+            dest.set(
+                rcodesignDir.zip(rcodesignOptions.version.zip(rcodesignTarget, Rcodesign::archiveName)) { dir, archive ->
+                    dir.file(archive)
+                },
+            )
+        }
+        val verifyRcodesign = tasks.register("verifyRcodesign", VerifySha256Task::class.java) {
+            archive.set(downloadRcodesign.flatMap { it.dest })
+            expectedSha256.set(rcodesignOptions.sha256)
+        }
+        val extractRcodesign = tasks.register("extractRcodesign", ExtractRcodesign::class.java) {
+            dependsOn(rcodesignOptions.sha256.map { listOf(verifyRcodesign) }.orElse(emptyList()))
+            archive.set(downloadRcodesign.flatMap { it.dest })
+            outputDirectory.set(rcodesignDir.map { it.dir("bin") })
+        }
+        val rcodesignExecutable = rcodesignOptions.executable.orElse(rcodesignDir.map { it.dir("bin").file("rcodesign") })
+        val rcodesignTasks = rcodesignOptions.executable.map { emptyList<TaskProvider<*>>() }.orElse(listOf(extractRcodesign))
+
         // Register the correct tasks for each target
         pluginExtension.targets.all {
             val target = this
@@ -52,6 +91,9 @@ class ConstruoPlugin : Plugin<Project> {
             target.packagingToolJdk.convention(Target.PackagingToolJdk.HOST_JDK)
             if (target is Target.MacOs) {
                 target.appBundle.convention(true)
+                target.notarization.enabled.convention(false)
+                target.signing.enabled.convention(target.notarization.enabled)
+                target.signing.hardenedRuntime.convention(target.signing.certificate.map { true }.orElse(false))
             }
             val targetBuildDir = baseBuildDir.map { it.dir(target.name) }
             val targetRuntimeImageBuildDir = baseRuntimeImageBuildDir.map { it.dir("${project.name}-${target.name}") }
@@ -303,6 +345,8 @@ class ConstruoPlugin : Plugin<Project> {
                     }
 
                     val entitlementsFileName = pluginExtension.humanName.map { "$it.entitlements" }
+                    val signing = target.signing
+                    val notarization = target.notarization
 
                     val buildMacAppBundle =
                         tasks.register("buildMacAppBundle$capitalized", BuildMacAppBundle::class.java) {
@@ -310,10 +354,68 @@ class ConstruoPlugin : Plugin<Project> {
                             packagedAppDir.set(targetRoastDir)
                             outputDirectory.set(macAppDir)
                             icon.set(target.macIcon)
-                            entitlementsFileSource.set(target.entitlementsFile)
+                            // a signature carries the entitlements, and a file at the root of Contents is left out of its seal
+                            entitlementsFileSource.set(
+                                signing.enabled.flatMap { if (it) project.objects.fileProperty() else target.entitlementsFile },
+                            )
                             entitlementsFileDestination.set(entitlementsFileName)
                             plist.set(pListFile)
                         }
+
+                    val signedAppDir = targetBuildDir.flatMap { dir ->
+                        pluginExtension.humanName.map { dir.dir("signed/$it.app") }
+                    }
+                    val signingEnabled = signing.enabled
+                    val signMacAppBundle =
+                        tasks.register("signMacAppBundle$capitalized", SignMacAppBundle::class.java) {
+                            onlyIf { signingEnabled.get() }
+                            dependsOn(buildMacAppBundle, rcodesignTasks, pluginExtension.prePackageTasks, target.prePackageTasks)
+                            appDirectory.set(macAppDir)
+                            executableName.set(targetRoastExeName)
+                            rcodesign.set(rcodesignExecutable)
+                            certificate.set(signing.certificate)
+                            certificatePassword.set(signing.certificatePassword)
+                            entitlementsFile.set(target.entitlementsFile)
+                            hardenedRuntime.set(signing.hardenedRuntime)
+                            forNotarization.set(notarization.enabled)
+                            packageFiles.set(packageExtraFiles)
+                            outputDirectory.set(signedAppDir)
+                        }
+
+                    val notarizedAppDir = targetBuildDir.flatMap { dir ->
+                        pluginExtension.humanName.map { dir.dir("notarized/$it.app") }
+                    }
+                    val notarizationEnabled = notarization.enabled
+                    val notarizeMacAppBundle =
+                        tasks.register("notarizeMacAppBundle$capitalized", NotarizeMacAppBundle::class.java) {
+                            onlyIf { notarizationEnabled.get() }
+                            dependsOn(signMacAppBundle, rcodesignTasks)
+                            appDirectory.set(signedAppDir)
+                            rcodesign.set(rcodesignExecutable)
+                            issuerId.set(notarization.issuerId)
+                            keyId.set(notarization.keyId)
+                            privateKeyFile.set(notarization.privateKeyFile)
+                            outputDirectory.set(notarizedAppDir)
+                        }
+
+                    // what's packaged: the raw layout, or the app bundle as built, signed or notarized
+                    fun <T : Any> byStage(raw: T, built: T, signed: T, notarized: T): Provider<T> =
+                        target.appBundle.zip(signing.enabled) { appBundle, sign -> appBundle to sign }
+                            .zip(notarization.enabled) { (appBundle, sign), notarize ->
+                                check(appBundle || !sign) {
+                                    "Target ${target.name} signs its app, which needs appBundle = true"
+                                }
+                                check(sign || !notarize) {
+                                    "Target ${target.name} notarizes its app, which needs signing.enabled = true"
+                                }
+                                when {
+                                    !appBundle -> raw
+                                    notarize -> notarized
+                                    sign -> signed
+                                    else -> built
+                                }
+                            }
+                    val packagedDir = byStage(targetRoastDir, macAppDir, signedAppDir, notarizedAppDir).flatMap { it }
 
                     tasks.register("package$capitalized", PackageTask::class.java) {
                         group = GROUP_NAME
@@ -323,11 +425,11 @@ class ConstruoPlugin : Plugin<Project> {
                             target.archiveFile.orElse(destinationDirectory.file(archiveFileName)),
                         )
                         dependsOn(
-                            target.appBundle.map { if (it) buildMacAppBundle else packageRoast },
+                            byStage<TaskProvider<*>>(packageRoast, buildMacAppBundle, signMacAppBundle, notarizeMacAppBundle),
                             pluginExtension.prePackageTasks,
                             target.prePackageTasks,
                         )
-                        from.set(target.appBundle.flatMap { if (it) macAppDir else targetRoastDir })
+                        from.set(packagedDir)
                         into.set(
                             target.appBundle.flatMap { appBundle ->
                                 if (appBundle) {
@@ -346,19 +448,20 @@ class ConstruoPlugin : Plugin<Project> {
                             },
                         )
                         executable.set(
-                            target.appBundle.flatMap {
-                                if (it) {
-                                    macAppDir.flatMap { directory ->
+                            target.appBundle.flatMap { appBundle ->
+                                packagedDir.flatMap { directory ->
+                                    if (appBundle) {
                                         directory.dir("Contents").dir("MacOS").file(targetRoastExeName)
-                                    }
-                                } else {
-                                    targetRoastDir.flatMap { directory ->
+                                    } else {
                                         directory.file(targetRoastExeName)
                                     }
                                 }
                             },
                         )
-                        packageFiles.set(packageExtraFiles)
+                        // a signed bundle has them already, within its seal
+                        packageFiles.set(
+                            signing.enabled.flatMap { if (it) project.provider { emptyMap<String, RegularFile>() } else packageExtraFiles },
+                        )
                     }
                 }
             }

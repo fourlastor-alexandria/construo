@@ -37,6 +37,35 @@ application {
     mainClass.set("io.github.fourlastor.gdx.Main")
 }
 
+// A self-signed certificate for the macM1Hardened target: macOS doesn't trust it, but it signs as
+// a Developer ID certificate would, hardened runtime included
+val testCertificate = layout.buildDirectory.file("test-certificate/construo-test.p12")
+val generateTestCertificate by tasks.registering(Exec::class) {
+    val keystore = testCertificate.get().asFile
+    outputs.file(keystore)
+    doFirst {
+        keystore.delete()
+        keystore.parentFile.mkdirs()
+    }
+    executable = File(System.getProperty("java.home"), "bin/keytool").path
+    args(
+        // rcodesign reads only the legacy PKCS#12 encryption
+        "-J-Dkeystore.pkcs12.legacy",
+        "-genkeypair",
+        "-alias", "construo-test",
+        "-keyalg", "RSA",
+        "-keysize", "2048",
+        "-validity", "3650",
+        "-dname", "CN=Construo Test",
+        "-ext", "KeyUsage:critical=digitalSignature",
+        "-ext", "ExtendedKeyUsage=codeSigning",
+        "-storetype", "PKCS12",
+        "-keystore", keystore.path,
+        "-storepass", "construo",
+        "-keypass", "construo",
+    )
+}
+
 construo {
     name.set("game")
     humanName.set("Game")
@@ -54,6 +83,22 @@ construo {
             architecture.set(Target.Architecture.AARCH64)
             identifier.set("io.github.fourlastor.Game")
             jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.8_7.tar.gz")
+            // ad hoc signature
+            signing {
+                enabled.set(true)
+            }
+        }
+        create<Target.MacOs>("macM1Hardened") {
+            architecture.set(Target.Architecture.AARCH64)
+            identifier.set("io.github.fourlastor.Game")
+            jdkUrl.set("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.8_7.tar.gz")
+            prePackageTasks.add(generateTestCertificate.name)
+            // signed with a certificate, so with the hardened runtime and the JVM's entitlements
+            signing {
+                enabled.set(true)
+                certificate.set(testCertificate)
+                certificatePassword.set("construo")
+            }
         }
         create<Target.Windows>("winX64") {
             architecture.set(Target.Architecture.X86_64)
