@@ -54,6 +54,16 @@ abstract class CreateRuntimeImageTask @Inject constructor(
 
     @TaskAction
     fun run() {
+        val targetJdk = targetJdkRoot.orElse(jdkRoot).get().asFile
+        val targetModules = File(targetJdk, "jmods")
+        val packagingJdk = jdkRoot.get().asFile
+        // Without java.base in the module path jlink falls back to the JDK it belongs to, which is
+        // only right when that's the target JDK, as it can link its own runtime
+        check(packagingJdk == targetJdk || File(targetModules, "java.base.jmod").isFile) {
+            "Target JDK '$targetJdk' has no jmods, jlink would silently package '$packagingJdk' instead. " +
+                "Use a target JDK that includes jmods, or set packagingToolJdk to TARGET_JDK if it can run " +
+                "on this machine and link its own runtime."
+        }
         val outputFile = output.get().asFile
         if (outputFile.exists()) {
             outputFile.deleteRecursively()
@@ -78,12 +88,6 @@ abstract class CreateRuntimeImageTask @Inject constructor(
             ).distinct()
 
         execOperations.exec {
-            val root = if (targetJdkRoot.isPresent) {
-                targetJdkRoot
-            } else {
-                jdkRoot
-            }.map { it.dir("jmods") }
-            val modulesPath = root.get().asFile.absolutePath
             val addModulesArg = if (modulesList.isNotEmpty()) {
                 val modulesCommaSeparated = modulesList.joinToString(separator = ",")
                 arrayOf(
@@ -104,7 +108,7 @@ abstract class CreateRuntimeImageTask @Inject constructor(
                 "--strip-debug",
             ) + addModulesArg + arrayOf(
                 "--module-path",
-                modulesPath,
+                targetModules.absolutePath,
                 "--output",
                 outputFile.absolutePath,
             )

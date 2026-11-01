@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -146,6 +147,68 @@ public class ConstruoPluginContractTest {
         assertTrue(invocations.contains("--multi-release 17"));
         assertTrue(invocations.contains("jlink:" + new File(bin, "jlink").getCanonicalPath()));
         assertTrue(invocations.contains("--module-path " + new File(targetJdk, "jmods").getAbsolutePath()));
+    }
+
+    @Test
+    public void targetJdkWithoutJmodsFailsInsteadOfLinkingTheHostJdk() throws Exception {
+        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows"));
+        Project project = newProject();
+        File log = new File(project.getProjectDir(), "tools.log");
+        File hostJdk = fakeJdk(new File(project.getProjectDir(), "host-jdk"), log);
+        File targetJdk = new File(project.getProjectDir(), "target-jdk");
+        assertTrue(targetJdk.mkdirs());
+
+        CreateRuntimeImageTask task = runtimeTask(project, hostJdk, targetJdk);
+        IllegalStateException error = assertThrows(IllegalStateException.class, task::run);
+
+        assertTrue(error.getMessage(), error.getMessage().contains(targetJdk.getAbsolutePath()));
+        assertFalse(log.exists());
+    }
+
+    @Test
+    public void targetJdkJmodsWithoutJavaBaseFailInsteadOfLinkingTheHostJdk() throws Exception {
+        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows"));
+        Project project = newProject();
+        File log = new File(project.getProjectDir(), "tools.log");
+        File hostJdk = fakeJdk(new File(project.getProjectDir(), "host-jdk"), log);
+        File targetJdk = new File(project.getProjectDir(), "target-jdk");
+        assertTrue(new File(targetJdk, "jmods").mkdirs());
+
+        CreateRuntimeImageTask task = runtimeTask(project, hostJdk, targetJdk);
+        assertThrows(IllegalStateException.class, task::run);
+
+        assertFalse(log.exists());
+    }
+
+    @Test
+    public void hostJdkLinksTheJmodsOfTheTargetJdk() throws Exception {
+        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows"));
+        Project project = newProject();
+        File log = new File(project.getProjectDir(), "tools.log");
+        File hostJdk = fakeJdk(new File(project.getProjectDir(), "host-jdk"), log);
+        File targetJdk = new File(project.getProjectDir(), "target-jdk");
+        File jmods = new File(targetJdk, "jmods");
+        assertTrue(jmods.mkdirs());
+        assertTrue(new File(jmods, "java.base.jmod").createNewFile());
+
+        runtimeTask(project, hostJdk, targetJdk).run();
+
+        String invocations = new String(Files.readAllBytes(log.toPath()), StandardCharsets.UTF_8);
+        assertTrue(invocations.contains("jlink:" + new File(hostJdk, "bin/jlink").getCanonicalPath()));
+        assertTrue(invocations.contains("--module-path " + jmods.getAbsolutePath()));
+    }
+
+    @Test
+    public void targetJdkWithoutJmodsCanLinkItsOwnRuntime() throws Exception {
+        Assume.assumeFalse(System.getProperty("os.name").startsWith("Windows"));
+        Project project = newProject();
+        File log = new File(project.getProjectDir(), "tools.log");
+        File targetJdk = fakeJdk(new File(project.getProjectDir(), "target-jdk"), log);
+
+        runtimeTask(project, targetJdk, targetJdk).run();
+
+        String invocations = new String(Files.readAllBytes(log.toPath()), StandardCharsets.UTF_8);
+        assertTrue(invocations.contains("jlink:" + new File(targetJdk, "bin/jlink").getCanonicalPath()));
     }
 
     @Test
@@ -537,6 +600,32 @@ public class ConstruoPluginContractTest {
         target.getArchitecture().set(Target.Architecture.X86_64);
         target.getJdkUrl().set("https://example.test/jdk.tar.gz");
         return target;
+    }
+
+    private static File fakeJdk(File root, File log) throws Exception {
+        File bin = new File(root, "bin");
+        assertTrue(bin.mkdirs());
+        writeScript(new File(bin, "java"), "exit 0");
+        writeScript(
+                new File(bin, "jlink"),
+                "printf 'jlink:%s %s\\n' \"$0\" \"$*\" >> '" + log.getAbsolutePath() + "'");
+        return root;
+    }
+
+    private static CreateRuntimeImageTask runtimeTask(Project project, File jdk, File targetJdk) throws Exception {
+        File jar = new File(project.getProjectDir(), "app.jar");
+        Files.write(jar.toPath(), new byte[0]);
+        CreateRuntimeImageTask task =
+                project.getTasks().create("probeRuntime", CreateRuntimeImageTask.class);
+        task.getJdkRoot().set(jdk);
+        task.getTargetJdkRoot().set(targetJdk);
+        task.getModules().set(Collections.emptyList());
+        task.getGuessModulesFromJar().set(false);
+        task.getIncludeDefaultCryptoModules().set(false);
+        task.getStripNativeCommands().set(false);
+        task.getJarFile().set(jar);
+        task.getOutput().set(new File(project.getBuildDir(), "runtime"));
+        return task;
     }
 
     private static Target.MacOs createMacTarget(ConstruoPluginExtension extension, String name) {
