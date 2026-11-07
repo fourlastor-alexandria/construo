@@ -60,9 +60,10 @@ jobs:
         working-directory: ./construo
       - name: Package Windows with target JDK tools
         run: ./gradlew test:packageWinX64 -PuseTargetJdkTools=true
+      # Ж isn't in the runner's code page, so this only starts if roast's UTF-8 manifest survives packaging
       - name: Extract and launch Windows package
         shell: pwsh
         run: |
-          Expand-Archive -Path test/build/construo/dist/game-winX64.zip -DestinationPath test/build/construo/windows-run
-          $process = Start-Process -FilePath test/build/construo/windows-run/game.exe -Wait -PassThru
+          Expand-Archive -Path test/build/construo/dist/game-winX64.zip -DestinationPath "test/build/construo/windows-run ø Ж"
+          $process = Start-Process -FilePath "test/build/construo/windows-run ø Ж/game.exe" -Wait -PassThru
           if ($process.ExitCode -ne 0) { exit $process.ExitCode }
