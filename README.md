@@ -78,8 +78,8 @@ Construo uses [roast](https://github.com/fourlastor-alexandria/roast/) to run th
 ```kotlin
 construo {
     roast {
-        // Roast release coordinates, defaults to v1.7.0 on GitHub Releases
-        version.set("v1.7.0")
+        // Roast release coordinates, defaults to v1.8.0 on GitHub Releases
+        version.set("v1.8.0")
         baseUrl.set("https://github.com/fourlastor-alexandria/roast/releases/download")
         // MacOS only, whether to run the jvm on the main thread, defaults to true
         runOnFirstThread.set(false)
@@ -108,6 +108,8 @@ The `useGpuHint` option specifies whether the packaged app will use the discrete
 The `useConsole` option specifies whether the packaged app will print output to a terminal (defaults to `false`). Note that `useConsole` overrides `useGpuHint`.
 
 The `icon` option specifies an icon to be used for the executable, this must be a PNG image.
+
+The executable uses UTF-8 as its code page on Windows 10 1903 and later, so the app also starts from a folder with characters outside the system code page, such as Cyrillic on a Western European Windows. This needs a target JDK of at least 11.0.17, 17.0.5 or 19, as older updates garble any non-ASCII path.
 
 #### Macos
 
