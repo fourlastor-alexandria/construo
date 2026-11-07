@@ -1,5 +1,6 @@
 package io.github.fourlastor.construo
 
+import io.github.fourlastor.construo.task.macos.Rcodesign
 import org.gradle.api.Action
 import org.gradle.api.ExtensiblePolymorphicDomainObjectContainer
 import org.gradle.api.Named
@@ -10,6 +11,7 @@ import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Nested
 import javax.inject.Inject
 
 abstract class ConstruoPluginExtension @Inject constructor(
@@ -38,6 +40,10 @@ abstract class ConstruoPluginExtension @Inject constructor(
         useZgc.convention(true)
         useMainAsContextClassLoader.convention(false)
     }
+    val rcodesign: RcodesignOptions = objectFactory.newInstance(RcodesignOptions::class.java).apply {
+        version.convention(Rcodesign.DEFAULT_VERSION)
+        baseUrl.convention(Rcodesign.DEFAULT_BASE_URL)
+    }
 
     init {
         prePackageTasks.convention(emptyList())
@@ -53,6 +59,10 @@ abstract class ConstruoPluginExtension @Inject constructor(
 
     fun roast(action: Action<in RoastOptions>) {
         action.execute(roast)
+    }
+
+    fun rcodesign(action: Action<in RcodesignOptions>) {
+        action.execute(rcodesign)
     }
 }
 
@@ -70,6 +80,27 @@ interface RoastOptions {
     val useZgc: Property<Boolean>
     val useMainAsContextClassLoader: Property<Boolean>
     val vmArgs: ListProperty<String>
+}
+
+interface RcodesignOptions {
+    val version: Property<String>
+    val baseUrl: Property<String>
+    val sha256: Property<String>
+    val executable: RegularFileProperty
+}
+
+interface MacSigning {
+    val enabled: Property<Boolean>
+    val certificate: RegularFileProperty
+    val certificatePassword: Property<String>
+    val hardenedRuntime: Property<Boolean>
+}
+
+interface MacNotarization {
+    val enabled: Property<Boolean>
+    val issuerId: Property<String>
+    val keyId: Property<String>
+    val privateKeyFile: RegularFileProperty
 }
 
 interface Target : Named {
@@ -94,6 +125,20 @@ interface Target : Named {
         val macIcon: RegularFileProperty
         val entitlementsFile: RegularFileProperty
         val additionalInfoFile: RegularFileProperty
+
+        @get:Nested
+        val signing: MacSigning
+
+        @get:Nested
+        val notarization: MacNotarization
+
+        fun signing(action: Action<in MacSigning>) {
+            action.execute(signing)
+        }
+
+        fun notarization(action: Action<in MacNotarization>) {
+            action.execute(notarization)
+        }
     }
 
     interface Windows : Target {
